@@ -110,7 +110,7 @@ public:
 	Expr* ParseSimpleExpr(int prior); 
 	Expr* ParseFactor(); 
 	bool HasError() {return error.GetText() != ""; }
-	void PrintError(ofstream& of) {of << error.GetText() << " " << error.GetErrorPos() << " " << error.GetErrorLine(); }
+	void PrintError(ofstream& of) {of << error.GetErrorPos() << " " << error.GetErrorLine()<< " "<< error.GetText()  ; }
 private:
 	Scanner& scan;
 	Error error;

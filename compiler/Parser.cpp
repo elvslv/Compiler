@@ -68,7 +68,7 @@ int UnaryOp::FillTree(int i, int j)
 
 void Expr::Print(ostream& os, int n)
 {
-	int h = FillTree(0, 0);
+	int h = FillTree(0, 0) - 1;
 	for (unsigned int i = 0; i < h; ++i)
 	{
 		for (unsigned int j = 0; j < maxLength; ++j)
@@ -113,20 +113,32 @@ int FindOpPrior(ExprType t)
 
 Expr* Parser::ParseSimpleExpr(int prior)
 {
-	if (HasError())
-		return NULL;
-	if (prior == 1)
-		return ParseFactor();
-	Expr* res = ParseSimpleExpr(prior - 1);
-	Token* t = scan.GetToken();
-	while (FindOpPrior(FindExprType(t->GetValue())) == prior)
+	try
 	{
-		string str = t->GetValue();
-		scan.Next();
-		res = new BinaryOp(str, res, ParseSimpleExpr(prior - 1));
-		t = scan.GetToken();
+		if (HasError())
+			return NULL;
+		if (prior == 1)
+			return ParseFactor();
+		Expr* res = ParseSimpleExpr(prior - 1);
+		Token* t = scan.GetToken();
+		while (FindOpPrior(FindExprType(t->GetValue())) == prior)
+		{
+			string str = t->GetValue();
+			scan.Next();
+			t = scan.GetToken();
+			Expr* expr1 = ParseSimpleExpr(prior - 1);
+			if (expr1)
+				res = new BinaryOp(str, res, expr1);
+			else
+				throw Error("Incorrect Syntax Construction", t->GetPos(), t->GetLine());
+		}
+		return res;
 	}
-	return res;
+	catch(Error err)
+	{
+		error = err;
+		return NULL;
+	}
 }
 
 Expr* Parser::ParseFactor()
@@ -141,7 +153,8 @@ Expr* Parser::ParseFactor()
 		int line = t->GetLine();
 		if (t->GetType() == ttEOF)
 			return NULL;
-		if (FindExprType(t->GetValue()) == etMinus || FindExprType(t->GetValue()) == etPlus)
+		if (FindExprType(t->GetValue()) == etMinus || FindExprType(t->GetValue()) == etPlus || 
+			FindExprType(t->GetValue()) == etNot)
 		{
 			string str = t->GetValue();
 			scan.Next();
@@ -164,17 +177,24 @@ Expr* Parser::ParseFactor()
 					if (t->GetValue() == "(")
 					{
 						scan.Next();
-						res = ParseSimpleExpr(4);
 						t = scan.GetToken();
-						if (t->GetValue() != ")")
+						if (t->GetValue() == ")")
 						{
-							throw Error("Unclosed Bracket", pos, line);
+							scan.Next();
+							res = ParseFactor();
+						}
+						else
+						{
+							res = ParseSimpleExpr(4);
+							t = scan.GetToken();
+							if (t->GetValue() != ")")
+								throw Error("Unclosed Bracket", pos, line);
+							else
+								scan.Next();
 						}
 					}
 					else
-					{
 						throw Error("Incorrect Syntax Construction", pos, line);
-					}
 	}
 	catch (Error err)
 	{

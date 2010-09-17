@@ -46,7 +46,17 @@ int main(int argc, char* argv[])
 				Expr* expr = parser.ParseSimpleExpr(4);
 				if (parser.HasError())
 					parser.PrintError(os);
-				expr->Print(os, 0);
+				else 
+				{
+					
+					if (scanner.GetToken()->GetType() != ttEOF)
+						os << scanner.GetToken()->GetPos()<< " " << scanner.GetToken()->GetLine() << " "
+						<< "Incorrect Syntax Construction";
+					else
+						if (expr)
+							expr->Print(os, 0);
+				}
+					
 			}
 			is.close();
 			os.close();
