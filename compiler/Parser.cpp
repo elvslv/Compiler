@@ -19,7 +19,7 @@ int Ident::FillTree(int i, int j)
 		arr[j][i + k] = Value[k];
 	if (i + k > maxLength)
 		maxLength = i + k;
-	return 1;
+	return 2;
 }
 
 int Const::FillTree(int i, int j)
@@ -29,7 +29,7 @@ int Const::FillTree(int i, int j)
 		arr[j][i + k] = Value[k];
 	if (i + k > maxLength)
 		maxLength = i + k;
-	return 1;
+	return 2;
 }
 
 int BinaryOp::FillTree(int i, int j)
@@ -38,16 +38,18 @@ int BinaryOp::FillTree(int i, int j)
 	for (; k < Value.length(); ++k)
 		arr[j][i + k] = Value[k];
 	++j;
+	arr[j++][i] = '|';
 	arr[j][i] = '|';
 	for (k = 0; k < 3; ++k)
 		arr[j][i + k + 1] = '_';
 	int hl = left->FillTree(i + 4, j);
 	for (k = 0; k < hl; ++k)
 		arr[++j][i] = '|';
+	arr[j][i] = '|';
 	for (k = 0; k < 3; ++k)
 		arr[j][i + k + 1] = '_';
 	int hr = right->FillTree(i + 4, j);
-	return hl + hr + 1;
+	return hl + hr + 2;
 }
 
 int UnaryOp::FillTree(int i, int j)
@@ -56,11 +58,12 @@ int UnaryOp::FillTree(int i, int j)
 	for (; k < Value.length(); ++k)
 		arr[j][i + k] = Value[k];
 	++j;
+	arr[j++][i] = '|';
 	arr[j][i] = '|';
 	for (k = 0; k < 3; ++k)
 		arr[j][i + k + 1] = '_';
 	int h = child->FillTree(i + 4, j);
-	return h + 1;
+	return h + 2;
 }
 
 void Expr::Print(ostream& os, int n)
