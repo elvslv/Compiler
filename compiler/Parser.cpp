@@ -136,10 +136,10 @@ Expr* Parser::ParseSimple(int prior)
 		string str = TokVal();
 		scan.Next();
 		Expr* expr1 = ParseSimple(prior - 1);
-			if (expr1)
-				res = new BinaryOp(str, res, expr1);
-			else
-				throw Error("Incorrect Syntax Construction", TokPos(), TokLine());
+		if (expr1)
+			res = new BinaryOp(str, res, expr1);
+		else
+			throw Error("Lexem Expected, EOF Found", TokPos(), TokLine());
 	}
 	return res;
 }
@@ -162,6 +162,8 @@ Expr* Parser::ParseFactor()
 	int line = TokLine();
 	if (TokType() == ttEOF)
 		return NULL;
+	if (TokType() == ttBadToken)
+		throw Error("Invalid Lexem", pos, line);
 	if (IsUnaryOp(TokVal()))
 	{
 		string str = TokVal();
@@ -170,7 +172,7 @@ Expr* Parser::ParseFactor()
 		if (expr1)
 			res = new UnaryOp(str, expr1);
 		else
-			throw Error("Incorrect Syntax Construction", pos, line);
+			throw Error("Lexem Expected, EOF Found", TokPos(), TokLine());
 	}
 	else
 		if (TokType() == ttIdentifier)
@@ -200,6 +202,6 @@ Expr* Parser::ParseFactor()
 					}
 				}
 				else
-					throw Error("Incorrect Syntax Construction", pos, line);
+					throw Error("Unexpected Lexem Found", pos, line);
 	return res;
 }
