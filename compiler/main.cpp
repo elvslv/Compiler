@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 			if (fsyn)
 			{
 				Parser parser(scanner);
-				Expr* expr = parser.ParseSimpleExpr(4);
+				Expr* expr = parser.ParseSimpleExpr();
 				if (parser.HasError())
 					parser.PrintError(os);
 				else 

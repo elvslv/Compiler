@@ -107,11 +107,17 @@ class Parser
 {
 public:
 	Parser(Scanner& sc): scan(sc), error(){ FillMaps(); scan.Next(); }
-	Expr* ParseSimpleExpr(int prior); 
+	Expr* ParseSimpleExpr(); 
+	Expr* ParseSimple(int prior);
 	Expr* ParseFactor(); 
 	bool HasError() {return error.GetText() != ""; }
-	void PrintError(ofstream& of) {of << error.GetErrorPos() << " " << error.GetErrorLine()<< " "<< error.GetText()  ; }
+	void PrintError(ofstream& of) {of << error.GetErrorPos() << " " 
+				<< error.GetErrorLine()<< " "<< error.GetText() ; }
 private:
+	TokenType TokType() {return scan.GetToken()->GetType(); }
+	string TokVal() {return scan.GetToken()->GetValue(); }
+	int TokPos() {return scan.GetToken()->GetPos();}
+	int TokLine() {return scan.GetToken()->GetLine();}
 	Scanner& scan;
 	Error error;
 	void FillMaps();	

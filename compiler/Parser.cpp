@@ -4,6 +4,7 @@ map<string, ExprType> ET;
 map<ExprType, int> priority;
 char arr[500][500];
 static int maxLength = 0;
+
 string UpperCase_(string tmp)
 {
 	for (unsigned int i = 0; i < tmp.length(); ++i)
@@ -111,27 +112,11 @@ int FindOpPrior(ExprType t)
 		return 10;
 }
 
-Expr* Parser::ParseSimpleExpr(int prior)
+Expr* Parser::ParseSimpleExpr()
 {
 	try
 	{
-		if (HasError())
-			return NULL;
-		if (prior == 1)
-			return ParseFactor();
-		Expr* res = ParseSimpleExpr(prior - 1);
-		Token* t = scan.GetToken();
-		while (FindOpPrior(FindExprType(t->GetValue())) == prior)
-		{
-			string str = t->GetValue();
-			scan.Next();
-			t = scan.GetToken();
-			Expr* expr1 = ParseSimpleExpr(prior - 1);
-			if (expr1)
-				res = new BinaryOp(str, res, expr1);
-			else
-				throw Error("Incorrect Syntax Construction", t->GetPos(), t->GetLine());
-		}
+		Expr* res = ParseSimple(4);
 		return res;
 	}
 	catch(Error err)
@@ -141,65 +126,80 @@ Expr* Parser::ParseSimpleExpr(int prior)
 	}
 }
 
+Expr* Parser::ParseSimple(int prior)
+{
+	if (prior == 1)
+		return ParseFactor();
+	Expr* res = ParseSimple(prior - 1);
+	while (FindOpPrior(FindExprType(TokVal())) == prior)
+	{
+		string str = TokVal();
+		scan.Next();
+		Expr* expr1 = ParseSimple(prior - 1);
+			if (expr1)
+				res = new BinaryOp(str, res, expr1);
+			else
+				throw Error("Incorrect Syntax Construction", TokPos(), TokLine());
+	}
+	return res;
+}
+
+bool IsUnaryOp(string str)
+{
+	return FindExprType(str) == etMinus || FindExprType(str) == etPlus || FindExprType(str) == etNot;
+}
+
+bool IsLiteral(TokenType tt)
+{
+	return tt == ttIntLit || tt == ttRealLit || tt == ttStringLit || tt == ttHexLiteral || tt == ttBinLiteral 
+		|| tt == ttOctLiteral;
+}
+
 Expr* Parser::ParseFactor()
 {
-	if (HasError())
+	Expr* res = NULL;
+	int pos = TokPos();
+	int line = TokLine();
+	if (TokType() == ttEOF)
 		return NULL;
-	Expr* res;
-	try
+	if (IsUnaryOp(TokVal()))
 	{
-		Token* t = scan.GetToken();
-		int pos = t->GetPos();
-		int line = t->GetLine();
-		if (t->GetType() == ttEOF)
-			return NULL;
-		if (FindExprType(t->GetValue()) == etMinus || FindExprType(t->GetValue()) == etPlus || 
-			FindExprType(t->GetValue()) == etNot)
+		string str = TokVal();
+		scan.Next();
+		Expr* expr1 = ParseFactor();
+		if (expr1)
+			res = new UnaryOp(str, expr1);
+		else
+			throw Error("Incorrect Syntax Construction", pos, line);
+	}
+	else
+		if (TokType() == ttIdentifier)
 		{
-			string str = t->GetValue();
+			res = new Ident(TokVal());
 			scan.Next();
-			res = new UnaryOp(str, ParseFactor());
 		}
 		else
-			if (t->GetType() == ttIdentifier)
+			if (IsLiteral(TokType()))
 			{
-				res = new Ident(t->GetValue());
+				res = new Const(TokVal());
 				scan.Next();
 			}
 			else
-				if (t->GetType() == ttIntLit || t->GetType() == ttRealLit || t->GetType() == ttStringLit
-					|| t->GetType() == ttHexLiteral || t->GetType() == ttBinLiteral || t->GetType() == ttOctLiteral)
+				if (TokVal() == "(")
 				{
-					res = new Const(t->GetValue());
 					scan.Next();
+					if (TokVal() == ")")
+						throw Error("Empty Bracket Sequence", pos, line);
+					else
+					{
+						res = ParseSimple(4);
+						if (TokVal() != ")")
+							throw Error("Unclosed Bracket", pos, line);
+						else
+							scan.Next();
+					}
 				}
 				else
-					if (t->GetValue() == "(")
-					{
-						scan.Next();
-						t = scan.GetToken();
-						if (t->GetValue() == ")")
-						{
-							scan.Next();
-							res = ParseFactor();
-						}
-						else
-						{
-							res = ParseSimpleExpr(4);
-							t = scan.GetToken();
-							if (t->GetValue() != ")")
-								throw Error("Unclosed Bracket", pos, line);
-							else
-								scan.Next();
-						}
-					}
-					else
-						throw Error("Incorrect Syntax Construction", pos, line);
-	}
-	catch (Error err)
-	{
-		error = err;
-		return NULL;
-	}
+					throw Error("Incorrect Syntax Construction", pos, line);
 	return res;
 }

@@ -272,6 +272,7 @@ private:
 	int StateStRealLitPointLast();
 	int StateStDollarPercentAmpersand();
 	string Change(string str);
+	bool operator == (TokenType tt) { return curToken->GetType() == tt; }
 };
 
 #endif //_SCANNER_H_
