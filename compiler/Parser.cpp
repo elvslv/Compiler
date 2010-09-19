@@ -13,7 +13,7 @@ string UpperCase_(string tmp)
 	return tmp;
 }
 
-int Ident::FillTree(int i, int j)
+int FillTreeIdentConst(int i, int j, string val)
 {
 	unsigned int k = 0;
 	for (; k < Value.length(); ++k)
@@ -23,17 +23,7 @@ int Ident::FillTree(int i, int j)
 	return 2;
 }
 
-int Const::FillTree(int i, int j)
-{
-	unsigned int k = 0;
-	for (; k < Value.length(); ++k)
-		arr[j][i + k] = Value[k];
-	if (i + k > maxLength)
-		maxLength = i + k;
-	return 2;
-}
-
-int BinaryOp::FillTree(int i, int j)
+int FillTreeOp(int i, int j, string val)
 {
 	unsigned int k = 0;
 	for (; k < Value.length(); ++k)
@@ -43,11 +33,27 @@ int BinaryOp::FillTree(int i, int j)
 	arr[j][i] = '|';
 	for (k = 0; k < 3; ++k)
 		arr[j][i + k + 1] = '_';
+	return j;
+}
+
+int Ident::FillTree(int i, int j)
+{
+	return FillTreeIdentConst(i, j, Value);
+}
+
+int Const::FillTree(int i, int j)
+{
+	return FillTreeIdentConst(i, j, Value);
+}
+
+int BinaryOp::FillTree(int i, int j)
+{
+	j = FillTreeOp(i, j, Value);
 	int hl = left->FillTree(i + 4, j);
-	for (k = 0; k < hl; ++k)
+	for (unsigned int k = 0; k < hl; ++k)
 		arr[++j][i] = '|';
 	arr[j][i] = '|';
-	for (k = 0; k < 3; ++k)
+	for (unsigned int k = 0; k < 3; ++k)
 		arr[j][i + k + 1] = '_';
 	int hr = right->FillTree(i + 4, j);
 	return hl + hr + 2;
@@ -55,14 +61,7 @@ int BinaryOp::FillTree(int i, int j)
 
 int UnaryOp::FillTree(int i, int j)
 {
-	unsigned int k = 0;
-	for (; k < Value.length(); ++k)
-		arr[j][i + k] = Value[k];
-	++j;
-	arr[j++][i] = '|';
-	arr[j][i] = '|';
-	for (k = 0; k < 3; ++k)
-		arr[j][i + k + 1] = '_';
+	j = FillTreeOp(i, j, Value);
 	int h = child->FillTree(i + 4, j);
 	return h + 2;
 }
@@ -174,34 +173,31 @@ Expr* Parser::ParseFactor()
 		else
 			throw Error("Lexem Expected, EOF Found", TokPos(), TokLine());
 	}
-	else
-		if (TokType() == ttIdentifier)
-		{
-			res = new Ident(TokVal());
-			scan.Next();
-		}
+	else if (TokType() == ttIdentifier)
+	{
+		res = new Ident(TokVal());
+		scan.Next();
+	}
+	else if (IsLiteral(TokType()))
+	{
+		res = new Const(TokVal());
+		scan.Next();
+	}
+	else if (TokVal() == "(")
+	{
+		scan.Next();
+		if (TokVal() == ")")
+			throw Error("Empty Bracket Sequence", pos, line);
 		else
-			if (IsLiteral(TokType()))
-			{
-				res = new Const(TokVal());
-				scan.Next();
-			}
+		{
+			res = ParseSimple(4);
+			if (TokVal() != ")")
+				throw Error("Unclosed Bracket", pos, line);
 			else
-				if (TokVal() == "(")
-				{
-					scan.Next();
-					if (TokVal() == ")")
-						throw Error("Empty Bracket Sequence", pos, line);
-					else
-					{
-						res = ParseSimple(4);
-						if (TokVal() != ")")
-							throw Error("Unclosed Bracket", pos, line);
-						else
-							scan.Next();
-					}
-				}
-				else
-					throw Error("Unexpected Lexem Found", pos, line);
+				scan.Next();
+		}
+	}
+	else
+		throw Error("Unexpected Lexem Found", pos, line);
 	return res;
 }
