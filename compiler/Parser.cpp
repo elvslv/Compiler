@@ -16,8 +16,8 @@ string UpperCase_(string tmp)
 int FillTreeIdentConst(int i, int j, string val)
 {
 	unsigned int k = 0;
-	for (; k < Value.length(); ++k)
-		arr[j][i + k] = Value[k];
+	for (; k < val.length(); ++k)
+		arr[j][i + k] = val[k];
 	if (i + k > maxLength)
 		maxLength = i + k;
 	return 2;
@@ -26,8 +26,8 @@ int FillTreeIdentConst(int i, int j, string val)
 int FillTreeOp(int i, int j, string val)
 {
 	unsigned int k = 0;
-	for (; k < Value.length(); ++k)
-		arr[j][i + k] = Value[k];
+	for (; k < val.length(); ++k)
+		arr[j][i + k] = val[k];
 	++j;
 	arr[j++][i] = '|';
 	arr[j][i] = '|';
@@ -50,7 +50,7 @@ int BinaryOp::FillTree(int i, int j)
 {
 	j = FillTreeOp(i, j, Value);
 	int hl = left->FillTree(i + 4, j);
-	for (unsigned int k = 0; k < hl; ++k)
+	for (int k = 0; k < hl; ++k)
 		arr[++j][i] = '|';
 	arr[j][i] = '|';
 	for (unsigned int k = 0; k < 3; ++k)
@@ -69,9 +69,9 @@ int UnaryOp::FillTree(int i, int j)
 void Expr::Print(ostream& os, int n)
 {
 	int h = FillTree(0, 0) - 1;
-	for (unsigned int i = 0; i < h; ++i)
+	for (int i = 0; i < h; ++i)
 	{
-		for (unsigned int j = 0; j < maxLength; ++j)
+		for (int j = 0; j < maxLength; ++j)
 			os << arr[i][j];
 		os << "\n";
 	}

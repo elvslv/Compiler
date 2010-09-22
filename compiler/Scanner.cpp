@@ -7,7 +7,7 @@ map<string, TokenType> TT;
 
 bool IsAlpha(char ch) {	return ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z';}
 bool IsDigit(char ch) {	return ch >= '0' && ch <= '9';}
-bool IsDelim(char ch) {	return ch >= 0 && ch <= 32;}
+bool IsWhiteSpace(char ch) {	return ch >= 0 && ch <= 32;}
 bool IsConcreteType(char ch, TokenType type)
 {
 	map<string, TokenType>::iterator it;
@@ -178,12 +178,12 @@ int Scanner::StateStNewLex()
 		return 0;
 	}
 	curStr = "";
-	if (IsDelim(curCh))
+	if (IsWhiteSpace(curCh))
 		return 1;
 	if (IsDigit(curCh))
 		state = stDigConsq;
 	else
-		if (IsAlpha(curCh))
+		if (IsAlpha(curCh) || curCh == '_')
 			state = stIdent;
 		else
 			switch(curCh)
@@ -224,7 +224,7 @@ int Scanner::StateStDigConsq()
 			state = stRealLitPointLast;    
 		else
 		{
-			if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsDelim(curCh))
+			if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsWhiteSpace(curCh))
 			{
 				NewToken(ttIntLit, curPos, curLine, curStr, prevch);
 				return 0;
@@ -241,7 +241,7 @@ int Scanner::StateStDigConsq()
 
 int Scanner::StateStIdent()
 {
-	if (file.eof() || IsDelim(curCh) || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation))
+	if (file.eof() || IsWhiteSpace(curCh) || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation))
 	{
 		if (IsKeyWord(curStr))
 			NewToken(ttKeyWord, curPos, curLine, curStr, prevch);
@@ -250,7 +250,7 @@ int Scanner::StateStIdent()
 		return 0;
 	}
 	else
-		if (!IsAlpha(curCh) && !IsDigit(curCh))
+		if (!IsAlpha(curCh) && !IsDigit(curCh) && curCh != '_')
 		{
 			NewToken(ttBadToken, curPos, curLine, "Incorrect Identifier Literal", -52);
 			return 0;
@@ -264,7 +264,7 @@ int Scanner::StateStRealLitWithoutE()
 		state = stRealELast;
 	else
 	{
-		if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsDelim(curCh))
+		if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsWhiteSpace(curCh))
 		{
 			NewToken(ttRealLit, curPos, curLine, curStr, prevch);
 			return 0;
@@ -286,7 +286,7 @@ int Scanner::StateStStrLitWithHashDigs()
 	if (curCh == '\'')
 		state = stApostrophe;
 	else
-		if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsDelim(curCh))
+		if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsWhiteSpace(curCh))
 		{
 			NewToken(ttStringLit, curPos, curLine, Change(curStr), prevch); 
 			return 0;
@@ -355,7 +355,7 @@ int Scanner::StateStDollarPercentAmpersand()
 	case stDollar:
 		i = 2; break;
 	}
-	if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsDelim(curCh))
+	if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsWhiteSpace(curCh))
 	{
 		if (curStr.length() == 1)
 		{
@@ -443,7 +443,7 @@ void Scanner::Next()
 						NewToken(ttSeparator, curPos, curLine, curStr, prevch);
 				return;
 			case stRealLit: 
-				if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsDelim(curCh))
+				if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsWhiteSpace(curCh))
 				{
 					NewToken(ttRealLit, curPos, curLine, curStr, prevch);
 					return;
