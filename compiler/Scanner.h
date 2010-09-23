@@ -2,6 +2,8 @@
 #define _SCANNER_H_
 
 #include <fstream>
+#include <iostream>
+#include <algorithm>
 #include <string>
 #include <map>
 using namespace std;

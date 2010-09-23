@@ -17,14 +17,6 @@ bool IsConcreteType(char ch, TokenType type)
 	return it != TT.end() && it->second == type;
 }
 
-string UpperCase(string tmp)
-{
-	for (unsigned int i = 0; i < tmp.length(); ++i)
-		if (tmp[i] >= 'a' && tmp[i] <= 'z')
-			tmp[i] = tmp[i] - 'a' + 'A';
-	return tmp;
-}
-
 bool IsHexDigit(char ch){ return IsDigit(ch) || ch >= 'A' && ch <= 'F' || ch >= 'a' && ch <= 'f';}
 bool IsBinDigit(char ch){ return ch == '1' || ch == '0';}
 bool IsOctDigit(char ch){ return ch >= '0' && ch <= '7';}
@@ -32,7 +24,7 @@ bool IsOctDigit(char ch){ return ch >= '0' && ch <= '7';}
 bool IsKeyWord(string tmp)
 {
 	map<string, TokenType>::iterator it;
-	tmp = UpperCase(tmp);
+	transform(tmp.begin(), tmp.end(), tmp.begin(), toupper);
 	it = TT.find(tmp);
 	return it != TT.end() && it->second == ttKeyWord;
 }

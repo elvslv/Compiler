@@ -1,0 +1,6 @@
+Pascal compiler. Vasilyeva Elena, FENU, 236 group. 2010
+
+Usage:
+compiler filename [options]
+-lex Print tokens info
+-syn Print syntax info
