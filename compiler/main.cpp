@@ -10,6 +10,7 @@ int main(int argc, char* argv[])
 		cout << "compiler filename [options]\n";
 		cout << "-lex Print tokens info\n";
 		cout << "-syn Print syntax tree\n";
+		cout << "-sym Print symbols table\n";
 	}
 	else
 	{
@@ -26,15 +27,16 @@ int main(int argc, char* argv[])
 					Scanner scanner(is);
 					bool flex = false;
 					bool fsyn = false;
-					for (int i = 2; i < argc; ++i)
-					{
+					bool fsym = false;
+					for (int i = 2; i < argc; ++i){
 						if (strcmp(argv[i], "-lex") == 0)
 							flex = true;
 						if (strcmp(argv[i], "-syn") == 0)
 							fsyn = true;
+						if (strcmp(argv[i], "-sym") == 0)
+							fsym = true;
 					}
-					if (flex)
-					{
+					if (flex){
 						while(scanner.GetToken()->GetType() != ttBadToken && scanner.GetToken()->GetType() != ttEOF)
 						{
 							scanner.Next();
@@ -42,8 +44,7 @@ int main(int argc, char* argv[])
 							os << tkn->GetValue() << " " << tkn->GetTypeName() <<  " " << tkn->GetPos() << " " << tkn->GetLine() << "\n";
 						}
 					}
-					if (fsyn)
-					{
+					if (fsyn){
 						Parser parser(scanner);
 						Expr* expr = parser.ParseSimpleExpr();	
 						if (scanner.GetToken()->GetType() != ttEOF)
@@ -52,6 +53,12 @@ int main(int argc, char* argv[])
 						else
 							if (expr)
 								expr->Print(os, 0);
+					}
+					if (fsym){
+						Parser parser(scanner);
+						parser.ParseDecl();
+						parser.PrintTree(os);
+						int i = 0;
 					}
 					is.close();
 					os.close();

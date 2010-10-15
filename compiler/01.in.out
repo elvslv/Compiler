@@ -1,13 +1,2 @@
-.            
-|            
-|___.        
-|   |        
-|   |___.    
-|   |   |    
-|   |   |___a
-|   |   |    
-|   |   |___b
-|   |        
-|   |___c    
-|            
-|___d        
+a - variable, type: FLOAT
+b - variable, type: FLOAT

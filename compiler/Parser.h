@@ -9,100 +9,153 @@ using namespace std;
 
 class Symbol{
 public:
+	Symbol(){name = "";}
+	Symbol(string s): name(s) {};
 	virtual bool IsType() {return false;}
-private:
+	virtual bool IsConst() {return false; }
+	virtual string GetName() {return name; }
+	virtual void SetName(string s) {name = s;}
+	virtual void Print(ostream& os){};
+protected:
 	string name;
 };
 
-bool IsConst(TokenType type){
-	return type == ttIntLit || type == ttRealLit;
-}
-
+typedef pair<string, Symbol*> Sym;
 typedef map <string, Symbol*> SymTable;
 
 class SymType: public Symbol{
 public:
+	SymType(string s): Symbol(s) {};
 	virtual bool IsType() {return true;}
+	virtual bool IsConst() {return false; }
+	virtual void Print(ostream& os) { os << name << " - type"; }
 public:
 	SymType(){};
 };
 
 class SymVar: public Symbol{
 public:
-	SymVar(SymType* t): type(t){};
+	SymVar(string s, SymType* t): Symbol(s), type(t){};
+	virtual bool IsConst() {return false; }
+	virtual SymType* GetType() {return type; }
+	virtual void Print(ostream& os) { os << name << " - variable, type: " << type->GetName(); }
 private:
 	SymType* type;
 };
 
 class SymProc: public Symbol{
 public:
-	SymProc(SymTable* ar, SymTable* loc): args(ar), locals(loc) {};
-private:
+	SymProc(string s, SymTable* ar, SymTable* loc): Symbol(s), args(ar), locals(loc) {};
+	virtual bool IsConst() {return false; }
+	virtual void Print(ostream& os) { 
+		os << name << " - procedure, args: ";  
+		for (SymTable::iterator it = args->begin(); it != args->end(); ++it){
+			(*it->second).Print(os);
+			os << ", ";
+		}
+	}
+protected:
 	SymTable* args;
 	SymTable* locals; 
 };
 
 class SymFunc: public SymProc{
 public:
-	SymFunc(SymTable* ar, SymTable* loc, SymType* t): SymProc(ar, loc), type(t) {};
+	SymFunc(string s, SymTable* ar, SymTable* loc, SymType* t): SymProc(s, ar, loc), type(t) {};
+	void Print(ostream& os) { 
+		os << name << " - function, args: ";  
+		for (SymTable::iterator it = args->begin(); it != args->end(); ++it){
+			(*it->second).Print(os);
+			os << ", ";
+		}
+		type->Print(os);
+	}
 private:
-	SymTable* args;
-	SymTable* locals; 
 	SymType* type;
 };
 
 class SymTypeScalar: public SymType{
+public:
+	SymTypeScalar(string s): SymType(s){};
 };
 
 class SymTypeFloat: public SymTypeScalar{
+public:
+	SymTypeFloat(string s): SymTypeScalar(s){};
 };
 
 class SymTypeInteger: public SymTypeScalar{
+public:
+	SymTypeInteger(string s): SymTypeScalar(s){};
 };
 
 class SymTypeRecord: public SymType{
 public:
-	SymTypeRecord(SymTable* f): fields(f) {};
+	SymTypeRecord(string s, SymTable* f): SymType(s), fields(f) {};
+	void Print(ostream& os) { 
+		os << name << " - record, fields: ";  
+		for (SymTable::iterator it = fields->begin(); it != fields->end(); ++it){
+			(*it->second).Print(os);
+			os << ", ";
+		}
+	}
 private:
 	SymTable* fields;
 };
 
 class SymTypeAlias: public SymType{
 public:
-	SymTypeAlias(SymType* rt): refType(rt){};
+	SymTypeAlias(string s, SymType* rt): SymType(s), refType(rt){};
+	void Print(ostream& os) { 
+		os << name << " - type alias, ref type: ";  
+		refType->Print(os);
+	}
 private:
 	SymType* refType;
 };
 
 class SymVarLocal: public SymVar{
+public:
+	SymVarLocal(string s, SymType* t): SymVar(s, t){};
 };
 
 class SymVarGlobal: public SymVar{
+public:
+	SymVarGlobal(string s, SymType* t): SymVar(s, t){};
 };
 
 class SymVarConst: public SymVar{
 public:
-	SymVarConst(SymType* t): SymVar(t){};
+	SymVarConst(string s, SymType* t): SymVar(s, t){};
+	bool IsConst() {return true; }
 };
 
 class SymVarParam: public SymVar{
 public:
-	SymVarParam(SymType* t): SymVar(t){};
+	SymVarParam(string s, SymType* t): SymVar(s, t){};
 };
 
 class SymVarParamByValue: public SymVarParam{
 public:
-	SymVarParamByValue(SymType* t): SymVarParam(t){};
+	SymVarParamByValue(string s, SymType* t): SymVarParam(s, t){};
 };
 
 class SymVarParamByRef: public SymVarParam{
 public:
-	SymVarParamByRef(SymType* t): SymVarParam(t){};
+	SymVarParamByRef(string s, SymType* t): SymVarParam(s, t){};
 };
 
 class SymTypeArray: public SymType{
 public:
-	SymTypeArray(SymType* type, SymVarConst* b, SymVarConst* t): elemType(type), bottom(b), top(t) {};
+	SymTypeArray(string s, SymType* type, SymVarConst* b, SymVarConst* t): SymType(s), elemType(type), bottom(b), top(t) {};
+	void Print(ostream& os) { 
+		os << name << " - array, type of elements: ";  
+		elemType->Print(os);
+		os << ", bottom: ";
+		bottom->Print(os);
+		os << ", top: ";
+		top->Print(os);
+	}
 private:
 	SymType* elemType;
 	SymVarConst* bottom; SymVarConst* top;
@@ -127,7 +180,6 @@ public:
 	string GetValue() { return Value; }
 	virtual bool LValue() { return false; }
 	virtual bool IsFunction() {return false; }
-	virtual TokenType ExprType() {return ttToken;}
 protected:
 	string Value;
 };
@@ -144,9 +196,7 @@ class Const: public Expr{
 public:
 	Const(SymVar* symb): symbol(symb){};
 	int FillTree(int i, int j);
-	TokenType ExprType() {return type;}
 private:
-	TokenType type;
 	SymVar* symbol;
 };
 
@@ -154,11 +204,6 @@ class BinaryOp: public Expr{
 public: 
 	BinaryOp(string val, Expr* l, Expr* r) : left(l), right(r) { Value = val; }
 	int FillTree(int i, int j);
-	TokenType ExprType() {
-		TokenType lt = left->ExprType();
-		TokenType rt = right->ExprType();
-		return lt == rt && IsConst(lt) ? lt : ttOperation;
-	}
 protected:
 	Expr* right;
 	Expr* left;
@@ -169,14 +214,12 @@ public:
 	ArrayAccess(string val, Expr* l, Expr* r): BinaryOp(val, l, r){};
 	int FillTree(int i, int j);
 	bool IsIdent() { return true; }
-	TokenType ExprType() {return ttOperation;}
 };
 
 class RecordAccess: public Expr{
 public: 
 	RecordAccess(string val, Expr* l, SymVar* r): left(l), right(r) {	Value = val; }
 	int FillTree(int i, int j);
-	TokenType ExprType() {return ttOperation;}
 private:
 	SymVar* right;
 	Expr* left;
@@ -189,7 +232,6 @@ public:
 		args = ar;
 	}
 	int FillTree(int i, int j);
-	TokenType ExprType() {return ttOperation;}
 private:
 	list<Expr*> args;
 	SymFunc* Value;
@@ -202,7 +244,6 @@ public:
 		Value = val;
 	}
 	int FillTree(int i, int j);
-	TokenType ExprType() {return child->ExprType();}
 private:
 	Expr* child;
 };
@@ -273,17 +314,27 @@ private:
 class Parser{
 public:
 	Parser(Scanner& sc): scan(sc){
+		table = new SymTable();
 		FillMaps();
 		scan.Next();
 		isRecord = false;
 		isAccess = false;
-		SymTypeInteger* i = new SymTypeInteger();
-		SymTypeFloat* f = new SymTypeFloat();
-		(*table)["INTEGER"] = i;
-		(*table)["FLOAT"] = f;
+		SymTypeInteger* i = new SymTypeInteger("INTEGER");
+		SymTypeFloat* f = new SymTypeFloat("FLOAT");
+		table->insert(Sym("INTEGER", i));
+		table->insert(Sym("FLOAT", f));
+		curIdent = "";
 	}
 	Expr* ParseSimpleExpr() { return ParseSimple(4); } 
-	SymTable* GetSymTable() {return table;}
+	void ParseDecl();
+	void PrintTree(ostream& os){
+		for( SymTable::iterator it = table->begin(); it != table->end(); ++it){
+			if(it->first == "FLOAT" || it->first == "INTEGER")
+				continue;
+			(*it->second).Print(os);
+			os << "\n";
+		}
+	}
 private:
 	Expr* ParseSimple(int prior);
 	Expr* ParseFactor(); 
@@ -293,13 +344,12 @@ private:
 	Expr* ParseNext();
 	Expr* CallAccess(Expr* id, int pos, int line);
 	void ParseAssignment();
-	void ParseDecl();
 	void ParseTypeBlock();
 	SymType* ParseType(bool newType);
 	void ParseVarBlock();
 	SymVar* ParseVar();
 	void ParseConstBlock();
-	SymVarConst* ParseConst();
+	SymVarConst* ParseConst(bool newConst);
 	SymFunc* ParseFunction(bool newFunc);
 	SymProc* ParseProcedure(bool newProc);
 	SymTable* ParseRecordBlock();
@@ -312,6 +362,7 @@ private:
 	string CheckCurTok(string blockName, SymTable* tbl);
 	Scanner& scan;
 	SymTable* table;
+	string curIdent;
 	void FillMaps();
 	bool isRecord;
 	bool isAccess;
