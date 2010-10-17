@@ -19,8 +19,13 @@ bool IsLiteral(TokenType tt){
 		|| tt == ttOctLiteral;
 }
 bool IsConstType(TokenType type){
-	return type == ttIntLit || type == ttRealLit;
+	return type == ttRealLit ||IsIntType(type);
 }
+
+bool IsIntType(TokenType type){
+	return type == ttIntLit || type == ttHexLiteral || type == ttBinLiteral || type == ttOctLiteral;
+}
+
 string UpCase(string s){
 	transform(s.begin(), s.end(), s.begin(), toupper);
 	return s;

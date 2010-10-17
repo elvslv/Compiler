@@ -1,0 +1,7 @@
+type TREC = record 
+    var X : INTEGER;
+    var Y : INTEGER;
+end;
+var A : TREC;
+var B : TREC;
+15 4 Invalid types in binary operation

@@ -1,0 +1,4 @@
+var a, b, c: array[1..10] of integer;
+begin
+	a := b + c;
+end.

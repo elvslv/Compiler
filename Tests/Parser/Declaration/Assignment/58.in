@@ -1,0 +1,6 @@
+type trec = record x: integer; y: float; end;
+var arr = array[1..10] of trec;
+x: integer;
+begin
+arr[x].y := 1234.5;
+end.

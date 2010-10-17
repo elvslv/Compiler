@@ -1,0 +1,6 @@
+function func(var i: float):float;
+var b: float;
+var i: integer;
+begin
+	b := func(5.7);
+end.

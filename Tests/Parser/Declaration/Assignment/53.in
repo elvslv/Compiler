@@ -1,0 +1,6 @@
+type tarr = array[1..10] of integer;
+var a: array[1..10] of tarr;
+b: tarr;
+begin
+	a[5] := b;
+end.

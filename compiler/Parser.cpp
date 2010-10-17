@@ -152,11 +152,12 @@ SymProc* Parser::ParseProcedure(bool newProc){
 		string ident = CheckCurTok("procedure", table);
 	ls* arg_names = new ls;
 	SymTable* argTable = GetArgs(ident, &arg_names);
-	if (argTable->empty())
-		CheckEof();
 	SymProc* res = new SymProc(ident, argTable, NULL, arg_names);
 	if (TokVal() != ";")
-		throw Error("; expected", TokPos(), TokLine());
+		if (TokVal() == "EOF")
+			throw Error("Unexpected end of file", TokPos(), TokLine());
+		else
+			throw Error("; expected", TokPos(), TokLine());
 	CheckEof();
 	if (TokVal() != "FORWARD")
 		throw Error("Forward expected", TokPos(), TokLine());
@@ -272,7 +273,7 @@ SymVarConst* Parser::ParseConst(bool newConst){
 	string curId = curIdent;
 	string val = TokVal();
 	if (IsConstType(TokType())){
-		if (TokType() == ttIntLit)
+		if (IsIntType(TokType()))
 			type = (SymType*)table->find("INTEGER")->second;
 		else if (TokType() == ttRealLit)
 			type = (SymType*)table->find("FLOAT")->second;
@@ -558,6 +559,7 @@ void CheckIsInt(NodeExpr* expr, int i, int j){
 
 NodeExpr* Parser::ParseVariable(NodeExpr* res){
 	string s;
+	bool f = false;
 	SymVar* var = NULL;
 	if (!res) {
 		SymTable::iterator it = FindS(TokVal(), table);
@@ -578,9 +580,11 @@ NodeExpr* Parser::ParseVariable(NodeExpr* res){
 		while (true){
 			if (var->IsFunc()){
 				res = ParseFunc(res, &var);
+				f = true;
 			}
 			else if (var->GetType()->IsArray()){
-				scan.Next();
+				if (!f)
+					scan.Next();
 				if (TokVal() != "["){
 					CheckAccess(TokVal(), TokPos(), TokLine());
 					if (res->GetValue() == s)
@@ -590,10 +594,12 @@ NodeExpr* Parser::ParseVariable(NodeExpr* res){
 				}
 				else{
 					res = ParseArr(res, &var);
+					f = true;
 				}
 			}
 			else if (var->GetType()->IsRecord()){
-				scan.Next();
+				if (!f)
+					scan.Next();
 				if (TokVal() != "."){
 					CheckAccess(TokVal(), TokPos(), TokLine());
 					if (res->GetValue() == s)
@@ -603,6 +609,7 @@ NodeExpr* Parser::ParseVariable(NodeExpr* res){
 				}
 				else{
 					res = ParseRecord(res, &var);
+					f = true;
 				}
 			} 
 			else
@@ -624,6 +631,9 @@ ArrayAccess* Parser::ParseArr(NodeExpr* res, SymVar** var){
 			CheckIsInt(expr, TokPos(), TokLine());
 			Symbol* symb = new Symbol("[]");
 			res = new ArrayAccess(symb, res, expr);
+			/*if (expr->IsConst()){
+				if (expr->CountValue() > ((SymTypeArray*)type)->)
+			}*/
 			type = ((SymTypeArray*)type)->GetElemType();
 			if (TokVal() == ","){
 				if (!type->IsArray())
@@ -658,6 +668,8 @@ FunctionCall* Parser::ParseFunc(NodeExpr* res, SymVar** var){
 			if (curVar->IsParamByRef()){
 				if (!EqTypes(expr->GetType(), curVar->GetType()))
 					throw Error("Incompatible types", TokPos(), TokLine());
+				if (!expr->LValue())
+					throw Error("Variable identifier expected", TokPos(), TokLine());
 			}
 			else
 				if (!EqTypes(expr->GetType(), curVar->GetType()) && !(curVar->GetType()->IsFloat() && expr->GetType()->IsInt()))

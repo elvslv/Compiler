@@ -73,6 +73,7 @@ int FindOpPrior(string str);
 bool IsUnaryOp(string str);
 bool IsLiteral(TokenType tt);
 bool IsConstType(TokenType type);
+bool IsIntType(TokenType type);
 string UpCase(string s);
 
 

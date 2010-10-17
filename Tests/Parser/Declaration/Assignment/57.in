@@ -1,0 +1,5 @@
+type trec = record x, y: integer; end;
+var a, b: trec;
+begin
+	a.x := b.y;
+end.

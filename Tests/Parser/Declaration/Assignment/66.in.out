@@ -1,0 +1,14 @@
+type TARR = array [const 1..const 10] of INTEGER;
+function FUNC: TARR;
+var I : INTEGER;
+:=              
+|               
+|___I           
+|               
+|___[]          
+    |           
+    |___()      
+    |   |       
+    |   |___FUNC
+    |           
+    |___5       

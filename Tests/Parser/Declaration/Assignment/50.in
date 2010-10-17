@@ -1,0 +1,5 @@
+type my_int = integer;
+var a: array[1..10] of my_int;
+begin
+	a[1] := 12345;
+end.

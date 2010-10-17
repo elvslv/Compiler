@@ -1,0 +1,5 @@
+type TREC = record 
+    var X : INTEGER;
+    var Y : FLOAT;
+end;
+9 2 Invalid lexem in var block

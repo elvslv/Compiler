@@ -1,0 +1,6 @@
+type trec = record x: array[1..6] of float; end;
+var a: trec;
+const eps = 0.1;
+begin
+a.x[5] = eps;
+end.

@@ -1,0 +1,6 @@
+type tt = integer;
+var a, b: array[1..10, 1..20] of float;
+i, j: tt;
+begin
+	a[i] := b[j];
+end.

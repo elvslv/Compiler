@@ -1,0 +1,7 @@
+type TREC = record 
+    var X : INTEGER;
+    var Y : INTEGER;
+end;
+var A : TREC;
+var B : TREC;
+A

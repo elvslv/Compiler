@@ -1,0 +1,6 @@
+type tarr = array[1..10] of integer;
+function func: tarr; forward;
+var i: integer;
+begin
+	i := func[5];
+end.

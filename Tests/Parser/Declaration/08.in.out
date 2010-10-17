@@ -1,2 +1,2 @@
-var C : array [const 27..const 28] of array [const 30..const 1000] of array [const 1..const 20] of FLOAT;
-var E : array [const 27..const 28] of array [const 30..const 1000] of array [const 1..const 20] of FLOAT;
+var C : array [const 1..const 20] of array [const 30..const 1000] of array [const 27..const 28] of FLOAT;
+var E : array [const 1..const 20] of array [const 30..const 1000] of array [const 27..const 28] of FLOAT;

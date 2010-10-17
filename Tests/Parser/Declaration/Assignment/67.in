@@ -1,0 +1,7 @@
+type trec = record x: integer; end;
+type tarr = array[1..10] of trec; 
+function func: tarr; forward;
+var i: integer;
+begin
+	i := func[5].x;
+end.

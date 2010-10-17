@@ -1,0 +1,4 @@
+var b: record y: integer; end;
+begin
+	b[i] := 5;
+end.

@@ -1,0 +1,6 @@
+function func(i: integer; j: float): integer;
+var a, j: float;
+i: integer;
+begin
+	a := func(i, j);
+end.

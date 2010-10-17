@@ -1,0 +1,4 @@
+var b: integer;
+begin
+	b := 5.0e-5;
+end.

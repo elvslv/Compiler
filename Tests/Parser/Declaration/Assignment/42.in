@@ -1,0 +1,4 @@
+var b: float;
+begin
+	b := 5;
+end.

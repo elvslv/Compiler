@@ -1,0 +1,6 @@
+type TREC = record 
+    var X : array [const 1..const 6] of FLOAT;
+end;
+var A : TREC;
+const EPS = 0.1; 
+A

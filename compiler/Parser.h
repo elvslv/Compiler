@@ -283,6 +283,7 @@ public:
 	virtual bool LValue() { return false; }
 	virtual bool IsFunction() {return false; }
 	virtual bool IsInt() {return false; }
+	virtual bool IsConst() {return false; }
 	void SetType(SymType* t) {type = t; }
 	SymType* GetType() {return type;}
 	Symbol* GetSymbol() {return symbol; }
@@ -310,6 +311,7 @@ public:
 	int FillTree(int i, int j);
 	bool LValue() {return false; }
 	bool IsInt() {return symbol->GetType()->IsInt(); }
+	bool IsConst() {return true; }
 };
 
 class BinaryOp: public NodeExpr{
@@ -318,6 +320,7 @@ public:
 	int FillTree(int i, int j);
 	bool LValue() {return false; }
 	bool IsInt() {return right->IsInt() && left->IsInt() && IsIntOperator(GetValue()); }
+	bool IsConst() {return right->IsConst() && left->IsConst(); }
 	NodeExpr* GetLeft() {return left;}
 	NodeExpr* GetRight() {return right;}
 protected:
@@ -361,6 +364,7 @@ public:
 	int FillTree(int i, int j);
 	bool LValue() {return false; }
 	bool IsInt() {return child->IsInt() && IsIntOperator(GetValue()); }
+	bool IsConst() {return child->IsConst(); }
 private:
 	NodeExpr* child;
 };
