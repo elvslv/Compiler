@@ -1,0 +1,13 @@
+const MAX = 5; 
+type STRINGG = FLOAT;
+type SPORTSMAN = record 
+    var CNT : STRINGG;
+    var FML : STRINGG;
+    var GOD : INTEGER;
+    var REZ : INTEGER;
+end;
+var A : array [const 1..const MAX] of SPORTSMAN;
+var I : FLOAT;
+var S : STRINGG;
+var MX : SPORTSMAN;
+var J : INTEGER;

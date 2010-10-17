@@ -1,0 +1,10 @@
+const N = 9; 
+type MAS = array [const 1..const N] of array [const 1..const N] of INTEGER;
+var M : MAS;
+var I : INTEGER;
+var J : INTEGER;
+var S : INTEGER;
+var MIN : INTEGER;
+var MAX : INTEGER;
+var JMIN : INTEGER;
+var IMAX : INTEGER;

@@ -1,0 +1,11 @@
+const MAXROW = 14; 
+const MAXCOL = 20; 
+type COLTYPE = array [const 1..const MAXROW] of INTEGER;
+var EXIT : FLOAT;
+var CHANGE : FLOAT;
+var NROW : INTEGER;
+var NCOL : COLTYPE;
+var COL : COLTYPE;
+procedure SHOWFIELD;
+function CHECKFIELD: INTEGER;
+procedure BITFORM(var (by ref) B : COLTYPE;var N : INTEGER;);

@@ -1,0 +1,10 @@
+type my_int = integer;
+tt = record
+	f: integer;
+	m, k: my_int;
+end;
+var a: my_int;
+const m = 28;
+var r: record
+	c: float;
+end;

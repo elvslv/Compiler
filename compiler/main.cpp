@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 						}
 					}
 					if (fsyn){
-						Parser parser(scanner);
+						ExprParser parser(scanner);
 						Expr* expr = parser.ParseSimpleExpr();	
 						if (scanner.GetToken()->GetType() != ttEOF)
 							os << scanner.GetToken()->GetPos()<< " " << scanner.GetToken()->GetLine() << " "
@@ -55,9 +55,8 @@ int main(int argc, char* argv[])
 								expr->Print(os, 0);
 					}
 					if (fsym){
-						Parser parser(scanner);
+						Parser parser(scanner, os);
 						parser.ParseDecl();
-						parser.PrintTree(os);
 						int i = 0;
 					}
 					is.close();

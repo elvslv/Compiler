@@ -1,0 +1,3 @@
+var t: integer;
+procedure proc; forward;
+procedure proc(i: integer); forward;

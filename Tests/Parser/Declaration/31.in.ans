@@ -1,0 +1,3 @@
+type TRECORD = record 
+    var A : array [const 1..const 10] of array [const 1..const 10] of INTEGER;
+end;

@@ -1,0 +1,1 @@
+var a: array[5..4] of float;

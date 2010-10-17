@@ -1,0 +1,2 @@
+type MY_INT = INTEGER;
+function FUNC(var (by ref) A : INTEGER;var (by ref) B : FLOAT;var C : MY_INT;): MY_INT;

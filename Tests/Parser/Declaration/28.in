@@ -1,0 +1,14 @@
+const
+MAXROW = 14; 
+MAXCOL = 20; 
+type
+ColType = array [1.. MAXROW] of Integer;
+var
+exit : float; 
+change : float; 
+nrow : Integer; 
+ncol : ColType;
+col : ColType; 
+Procedure ShowField;forward; 
+Function CheckField : Integer; forward;
+Procedure BitForm(n : Integer; var b : ColType); forward;

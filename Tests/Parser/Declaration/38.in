@@ -1,0 +1,16 @@
+var a: integer;
+
+const
+  MaxN = 10;
+
+type
+  TT = integer;
+  TLong = array[1..MaxN] of TT;
+  TLongLong = array[1..20] of TLong;
+
+var q: TLongLong;
+
+type
+  TMegaPoints = record x, y, z: TLongLong; a, b, c: float; end;
+
+var w: TMegaPoints;

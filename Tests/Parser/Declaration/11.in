@@ -1,0 +1,2 @@
+const m = 25;
+var t: array[1..m] of float;

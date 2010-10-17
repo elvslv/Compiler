@@ -1,0 +1,7 @@
+const
+     N = 9;
+type Mas = array[1..N,1..N] of integer;
+var
+   M: Mas;
+   i,j,s: integer;
+   min,max,jmin,imax: integer;

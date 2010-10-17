@@ -1,0 +1,3 @@
+const t = 12.3456;
+var a: record a: integer; end;
+function m(a: record t: integer; end;): integer; forward;

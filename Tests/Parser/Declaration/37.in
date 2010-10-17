@@ -1,0 +1,3 @@
+var MaxN: integer;
+
+type TArray = array[1..MaxN] of integer;

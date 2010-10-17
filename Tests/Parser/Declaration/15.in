@@ -1,0 +1,5 @@
+type rr = record
+m, n: float;
+end;
+var a: rr;
+const m = record a: integer; end;

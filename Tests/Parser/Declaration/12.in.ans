@@ -1,0 +1,11 @@
+type MY_INT = INTEGER;
+type TT = record 
+    var F : INTEGER;
+    var K : MY_INT;
+    var M : MY_INT;
+end;
+var A : MY_INT;
+const M = 28; 
+var R : record 
+    var C : FLOAT;
+end;

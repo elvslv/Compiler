@@ -1,0 +1,3 @@
+procedure proc(var i: integer); forward;
+procedure proc0(var i, m, k: integer; s: float); forward;
+procedure proc1(var j: float): integer; forward;

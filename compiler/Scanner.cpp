@@ -1,13 +1,16 @@
 #include "scanner.h"
 #include <iostream>
-
+map<string, TokenType> TT;
 const int TabSize = 4;
 
-map<string, TokenType> TT;
+bool IsKeyWord(string tmp)
+{
+	map<string, TokenType>::iterator it;
+	transform(tmp.begin(), tmp.end(), tmp.begin(), toupper);
+	it = TT.find(tmp);
+	return it != TT.end() && it->second == ttKeyWord;
+}
 
-bool IsAlpha(char ch) {	return ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z';}
-bool IsDigit(char ch) {	return ch >= '0' && ch <= '9';}
-bool IsWhiteSpace(char ch) {	return ch >= 0 && ch <= 32;}
 bool IsConcreteType(char ch, TokenType type)
 {
 	map<string, TokenType>::iterator it;
@@ -17,16 +20,27 @@ bool IsConcreteType(char ch, TokenType type)
 	return it != TT.end() && it->second == type;
 }
 
-bool IsHexDigit(char ch){ return IsDigit(ch) || ch >= 'A' && ch <= 'F' || ch >= 'a' && ch <= 'f';}
-bool IsBinDigit(char ch){ return ch == '1' || ch == '0';}
-bool IsOctDigit(char ch){ return ch >= '0' && ch <= '7';}
-
-bool IsKeyWord(string tmp)
+void FillTokenTypes()
 {
-	map<string, TokenType>::iterator it;
-	transform(tmp.begin(), tmp.end(), tmp.begin(), toupper);
-	it = TT.find(tmp);
-	return it != TT.end() && it->second == ttKeyWord;
+	TT["AND"] = ttKeyWord; TT["ARRAY"] = ttKeyWord; TT["BEGIN"] = ttKeyWord; TT["CASE"] = ttKeyWord;
+	TT["CONST"] = ttKeyWord; TT["DIV"] = ttKeyWord; TT["DO"] = ttKeyWord; TT["DOWNTO"] = ttKeyWord;
+	TT["ELSE"] = ttKeyWord; TT["END"] = ttKeyWord; TT["FOR"] = ttKeyWord; TT["FUNCTION"] = ttKeyWord;
+	TT["FORWARD"] = ttKeyWord; TT["GOTO"] = ttKeyWord; TT["IF"] = ttKeyWord; TT["IN"] = ttKeyWord;
+	TT["MOD"] = ttKeyWord; TT["NIL"] = ttKeyWord; TT["NOT"] = ttKeyWord; TT["OF"] = ttKeyWord;
+	TT["OR"] = ttKeyWord; TT["PROCEDURE"] = ttKeyWord; TT["PROGRAM"] = ttKeyWord; TT["RECORD"] = ttKeyWord;
+	TT["REPEAT"] = ttKeyWord; TT["SET"] = ttKeyWord; TT["SHL"] = ttKeyWord; TT["SHR"] = ttKeyWord;
+	TT["STRING"] = ttKeyWord; TT["THEN"] = ttKeyWord; TT["TO"] = ttKeyWord; TT["TYPE"] = ttKeyWord;
+	TT["UNTIL"] = ttKeyWord; TT["USES"] = ttKeyWord; TT["VAR"] = ttKeyWord; TT["WHILE"] = ttKeyWord;
+	TT["WITH"] = ttKeyWord; TT["XOR"] = ttKeyWord; TT["READLN"] = ttKeyWord; TT["WRITELN"] = ttKeyWord;
+	TT["READ"] = ttKeyWord; TT["WRITE"] = ttKeyWord; TT["INTEGER"] = ttKeyWord; TT["BYTE"] = ttKeyWord;
+	TT["SHORTINT"] = ttKeyWord; TT["WORD"] = ttKeyWord; TT["LONGINT"] = ttKeyWord; TT["INT64"] = ttKeyWord;
+	TT["BOOLEAN"] = ttKeyWord; TT["CHAR"] = ttKeyWord; TT["SINGLE"] = ttKeyWord; TT["REAL"] = ttKeyWord;
+	TT["DOUBLE"] = ttKeyWord; TT["EXTENDED"] = ttKeyWord; TT["COMP"] = ttKeyWord; 
+	TT["."] = ttSeparator; TT[","] = ttSeparator; TT["("] = ttSeparator; TT[")"] = ttSeparator; TT["["] = ttSeparator;
+	TT["]"] = ttSeparator; TT["{"] = ttSeparator; TT["}"] = ttSeparator; TT[";"] = ttSeparator; TT[":"] = ttSeparator;
+	TT["+"] = ttOperation; TT["-"] = ttOperation; TT["/"] = ttOperation; TT["*"] = ttOperation; TT["="] = ttOperation;
+	TT[">"] = ttOperation; TT["<"] = ttOperation; TT["<>"] = ttOperation; TT[":="] = ttOperation; TT[">="] = ttOperation;
+	TT["<="] = ttOperation;  TT["^"] = ttOperation; TT["@"] = ttOperation; TT[".."] = ttSeparator; 
 }
 
 void Scanner::GC()
@@ -536,27 +550,4 @@ void Scanner::Next()
 	{
 		NewToken(ttBadToken, lx.GetErrorPos(), lx.GetErrorLine(), lx.GetText(), -52);
 	}
-}
-
-void Scanner::FillTokenTypes()
-{
-	TT["AND"] = ttKeyWord; TT["ARRAY"] = ttKeyWord; TT["BEGIN"] = ttKeyWord; TT["CASE"] = ttKeyWord;
-	TT["CONST"] = ttKeyWord; TT["DIV"] = ttKeyWord; TT["DO"] = ttKeyWord; TT["DOWNTO"] = ttKeyWord;
-	TT["ELSE"] = ttKeyWord; TT["END"] = ttKeyWord; TT["FOR"] = ttKeyWord; TT["FUNCTION"] = ttKeyWord;
-	TT["FORWARD"] = ttKeyWord; TT["GOTO"] = ttKeyWord; TT["IF"] = ttKeyWord; TT["IN"] = ttKeyWord;
-	TT["MOD"] = ttKeyWord; TT["NIL"] = ttKeyWord; TT["NOT"] = ttKeyWord; TT["OF"] = ttKeyWord;
-	TT["OR"] = ttKeyWord; TT["PROCEDURE"] = ttKeyWord; TT["PROGRAM"] = ttKeyWord; TT["RECORD"] = ttKeyWord;
-	TT["REPEAT"] = ttKeyWord; TT["SET"] = ttKeyWord; TT["SHL"] = ttKeyWord; TT["SHR"] = ttKeyWord;
-	TT["STRING"] = ttKeyWord; TT["THEN"] = ttKeyWord; TT["TO"] = ttKeyWord; TT["TYPE"] = ttKeyWord;
-	TT["UNTIL"] = ttKeyWord; TT["USES"] = ttKeyWord; TT["VAR"] = ttKeyWord; TT["WHILE"] = ttKeyWord;
-	TT["WITH"] = ttKeyWord; TT["XOR"] = ttKeyWord; TT["READLN"] = ttKeyWord; TT["WRITELN"] = ttKeyWord;
-	TT["READ"] = ttKeyWord; TT["WRITE"] = ttKeyWord; TT["INTEGER"] = ttKeyWord; TT["BYTE"] = ttKeyWord;
-	TT["SHORTINT"] = ttKeyWord; TT["WORD"] = ttKeyWord; TT["LONGINT"] = ttKeyWord; TT["INT64"] = ttKeyWord;
-	TT["BOOLEAN"] = ttKeyWord; TT["CHAR"] = ttKeyWord; TT["SINGLE"] = ttKeyWord; TT["REAL"] = ttKeyWord;
-	TT["DOUBLE"] = ttKeyWord; TT["EXTENDED"] = ttKeyWord; TT["COMP"] = ttKeyWord; 
-	TT["."] = ttSeparator; TT[","] = ttSeparator; TT["("] = ttSeparator; TT[")"] = ttSeparator; TT["["] = ttSeparator;
-	TT["]"] = ttSeparator; TT["{"] = ttSeparator; TT["}"] = ttSeparator; TT[";"] = ttSeparator; TT[":"] = ttSeparator;
-	TT["+"] = ttOperation; TT["-"] = ttOperation; TT["/"] = ttOperation; TT["*"] = ttOperation; TT["="] = ttOperation;
-	TT[">"] = ttOperation; TT["<"] = ttOperation; TT["<>"] = ttOperation; TT[":="] = ttOperation; TT[">="] = ttOperation;
-	TT["<="] = ttOperation;  TT["^"] = ttOperation; TT["@"] = ttOperation; TT[".."] = ttSeparator; 
 }

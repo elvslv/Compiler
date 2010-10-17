@@ -1,0 +1,5 @@
+var M : array [const 7..const 8] of array [const 5..const 6] of array [const 3..const 4] of array [const 1..const 2] of array [const 20..const 30] of array [const 1..const 10] of record 
+    var I : INTEGER;
+    var J : INTEGER;
+    var K : INTEGER;
+end;

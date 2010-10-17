@@ -1,0 +1,3 @@
+procedure PROC(var (by ref) I : INTEGER;);
+procedure PROC0(var (by ref) I : INTEGER;var (by ref) K : INTEGER;var (by ref) M : INTEGER;var S : FLOAT;);
+30 3 ; expected

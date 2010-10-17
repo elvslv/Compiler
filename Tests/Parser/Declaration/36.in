@@ -1,0 +1,3 @@
+const MaxN = 1000.0;
+
+type TArray = array[1..MaxN] of integer;

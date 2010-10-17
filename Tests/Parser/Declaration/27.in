@@ -1,0 +1,7 @@
+type
+ Tmatrix = array[1..1] of integer;
+var
+ Matrix: ^Tmatrix;
+ Sums: ^Tmatrix;
+ Nums: ^Tmatrix;
+ i,j,k1,k2,m,n: integer;

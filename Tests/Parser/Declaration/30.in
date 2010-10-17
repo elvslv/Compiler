@@ -1,0 +1,19 @@
+var a: integer;
+b: float;
+c: array[1..10] of integer;
+d: array[1..9, 10..19] of float;
+const m = 10;
+t = 12;
+pi = 3.141592653;
+eps = 1.0e-10;
+f = m;
+type int = integer;
+t1 = record
+a: integer;
+b: int;
+end;
+t2 = array[1..20, 10..15] of float;
+function trrr: integer; forward;
+function trrrr(var a: integer; b: float): float; forward;
+procedure proc; forward;
+procedure proc1(i: integer; var m, f: float); forward;

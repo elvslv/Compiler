@@ -1,0 +1,11 @@
+type
+  TArray = array[1..10] of integer;
+
+var a: TArray;
+
+type
+  TRecordArray = record mass: TArray; a, b, c: integer; end;
+
+var b, c: TRecordArray;
+
+const MaxN = 1000;

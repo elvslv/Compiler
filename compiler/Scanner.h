@@ -6,61 +6,9 @@
 #include <algorithm>
 #include <string>
 #include <map>
+#include "common.h"
 using namespace std;
-
-enum TokenType{
-	ttToken, 
-    ttIdentifier, 
-	ttKeyWord,
-    ttLiteral, 
-	ttIntLit,
-	ttRealLit, 
-	ttStringLit, 
-	ttHexLiteral,
-	ttBinLiteral, 
-	ttOctLiteral,
-	ttOperation, 
-	ttSeparator,
-	ttEOF, 
-	ttBadToken, 
-	ttDelimiter, 
-	ttSpecSymb, 
-
-};
-
-enum State
-{
-	stNewLex, 
-	stDigConsq, 
-	stIdent, 
-	stSlash, 
-	stRndBracket,
-	stBrace, 
-	stLess, 
-	stMore, 
-	stColon,
-	stRealLit,
-	stApostrophe, 
-	stHashSign, 
-	stDollar,
-	stRealELast,
-	stRealLitWithoutE,
-	stCmntSlash, 
-	stCmntRndBracket, 
-	stStrLitWithHash0Dig, 
-	stStrLitWithHash1Dig, 
-	stStrLitWithHash2Dig, 
-	stStrLitWithHash3Dig, 
-	stCmntRndPosToClose, 
-	stClosedApostrophe, 
-	stRealLitSignLast, 
-	stRealLitPointLast, 
-	stPointBeforeEOF, 
-	stPercent, 
-	stAmpersand, 
-	stPoint, 
-};
-
+void FillTokenTypes();
 class Token
 {
 public:
@@ -258,7 +206,6 @@ private:
 	Token* curToken;
 	State state;
 	string curStr;
-	void FillTokenTypes();
 	void SkipDelimeters();
 	void SkipComments();
 	void ChangePosIndex();
