@@ -1,1 +1,1 @@
-function a(a: float): integer; forward;
+function a(a: real): integer; forward;

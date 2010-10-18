@@ -1,7 +1,7 @@
 var A : INTEGER;
-var B : FLOAT;
+var B : REAL;
 var C : array [const 1..const 10] of INTEGER;
-var D : array [const 1..const 9] of array [const 10..const 19] of FLOAT;
+var D : array [const 1..const 9] of array [const 10..const 19] of REAL;
 const M = 10; 
 const T = 12; 
 const PI = 3.141592653; 
@@ -12,8 +12,8 @@ type T1 = record
     var A : INTEGER;
     var B : INT;
 end;
-type T2 = array [const 1..const 20] of array [const 10..const 15] of FLOAT;
+type T2 = array [const 1..const 20] of array [const 10..const 15] of REAL;
 function TRRR: INTEGER;
-function TRRRR(var (by ref) A : INTEGER;var B : FLOAT;): FLOAT;
+function TRRRR(var (by ref) A : INTEGER;var B : REAL;): REAL;
 procedure PROC;
-procedure PROC1(var (by ref) F : FLOAT;var I : INTEGER;var (by ref) M : FLOAT;);
+procedure PROC1(var (by ref) F : REAL;var I : INTEGER;var (by ref) M : REAL;);

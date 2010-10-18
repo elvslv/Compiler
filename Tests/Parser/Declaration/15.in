@@ -1,5 +1,5 @@
 type rr = record
-m, n: float;
+m, n: real;
 end;
 var a: rr;
 const m = record a: integer; end;

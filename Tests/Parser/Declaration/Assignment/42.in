@@ -1,4 +1,4 @@
-var b: float;
+var b: real;
 begin
 	b := 5;
 end.

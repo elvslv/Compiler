@@ -276,7 +276,7 @@ SymVarConst* Parser::ParseConst(bool newConst){
 		if (IsIntType(TokType()))
 			type = (SymType*)table->find("INTEGER")->second;
 		else if (TokType() == ttRealLit)
-			type = (SymType*)table->find("FLOAT")->second;
+			type = (SymType*)table->find("REAL")->second;
 	} 
 	else {
 		if (TokType() != ttIdentifier)
@@ -477,16 +477,29 @@ bool EqTypes(SymType* t1, SymType* t2){
 	return t1 == t2;
 }
 
+bool IToR(SymType* t1, SymType* t2){
+	while(t1->IsAlias())
+		t1 = ((SymTypeAlias*)t1)->GetRefType();
+	while (t2->IsAlias())
+		t2 = ((SymTypeAlias*)t2)->GetRefType();
+	return t1->GetName() == "REAL" && t2->GetName() == "INTEGER";
+}
+
 void Parser::ParseAssignment(){
 	NodeExpr* expr = ParseSimple(5);
 	if (expr->GetValue() == ":="){
-		if (!((BinaryOp*)expr)->GetLeft()->LValue())
-			throw Error ("Left part of assignment must be lvalue", TokPos(), TokLine());
-		SymType* t1 = ((BinaryOp*)expr)->GetLeft()->GetType();
-		SymType* t2 = ((BinaryOp*)expr)->GetRight()->GetType();
-		if (!(t1 && t2 && EqTypes(t1, t2)))
-			throw Error("Incompatible types in assignment", TokPos(), TokLine());
+		BinaryOp* res = (BinaryOp*)expr;
+		NodeExpr* lExpr = expr;
+		while(lExpr->IsBinaryOp())
+			lExpr = ((BinaryOp*)lExpr)->GetLeft();
+		if (!res->GetLeft()->LValue())
+			throw Error ("Left part of assignment must be lvalue", lExpr->GetPos(), lExpr->GetLine());
+		SymType* t1 = res->GetLeft()->GetType();
+		SymType* t2 = res->GetRight()->GetType();
+		if (!(t1 && t2 && (EqTypes(t1, t2) || IToR(t1, t2))))
+			throw Error("Incompatible types in assignment", lExpr->GetPos(), lExpr->GetLine());
 	}
+	os << "\n";
 	expr->Print(os, 0);
 }
 
@@ -503,6 +516,8 @@ NodeExpr* Parser::ParseSimple(int prior){
 	if (prior == 1)
 		return ParseFactor();
 	SymType* type = NULL;
+	int pos = TokPos();
+	int line = TokLine();
 	NodeExpr* res = ParseSimple(prior - 1);
 	while (FindOpPrior(TokVal()) == prior){
 		string str = TokVal();
@@ -511,16 +526,18 @@ NodeExpr* Parser::ParseSimple(int prior){
 		if (!expr1)
 			throw Error("Lexem expected, EOF found", TokPos(), TokLine());
 		Symbol* symb = new Symbol(str);
-		res = new BinaryOp(symb, res, expr1);
+		res = new BinaryOp(symb, pos, line, res, expr1);
 		if (prior == 5)
 			break;
 		if (res->IsInt())
 			type = (SymType*)(*table)["INTEGER"];
 		else
-			type = (SymType*)(*table)["FLOAT"];
+			type = (SymType*)(*table)["REAL"];
 		res->SetType(type);
 		if (!res->GetType()->IsScalar() || !expr1->GetType()->IsScalar())
-			throw Error("Invalid types in binary operation", TokPos(), TokLine());
+			throw Error("Invalid types in binary operation", pos, line);
+		pos = TokPos();
+		line = TokLine();
 	}
 	return res;
 }
@@ -544,10 +561,13 @@ void CheckAccess(string s, int i, int j){
 
 Const* Parser::ParseConst(){
 	Const* res = NULL;
+	int pos = TokPos();
+	int line = TokLine();
+	SymTable::iterator it = FindS(TokVal(), table);
 	scan.Next();
 	CheckAccess(TokVal(), TokPos(), TokLine());
-	SymTable::iterator it = FindS(TokVal(), table);
-	res = new Const((SymVarConst*)(it->second));
+	nextScan = false;
+	res = new Const((SymVarConst*)(it->second), pos, line);
 	res->SetType(((SymVarConst*)it->second)->GetType());
 	return res;
 }
@@ -561,12 +581,14 @@ NodeExpr* Parser::ParseVariable(NodeExpr* res){
 	string s;
 	bool f = false;
 	SymVar* var = NULL;
+	int pos = TokPos();
+	int line = TokLine();
 	if (!res) {
 		SymTable::iterator it = FindS(TokVal(), table);
 		var = (SymVar*)(it->second);
 		s = TokVal();
 		Symbol* symb = new Symbol(s);
-		res = new NodeExpr(symb);
+		res = new NodeExpr(symb, pos, line);
 	}
 	else{
 		s = res->GetValue();
@@ -574,67 +596,79 @@ NodeExpr* Parser::ParseVariable(NodeExpr* res){
 		//res = new NodeExpr(var);
 	}
 	SymType* type = var->GetType();
-	if (!var->GetType()->IsArray() && !var->GetType()->IsRecord() && !var->IsFunc())
-		res = new Variable(var);
+	if (!var->GetType()->IsArray() && !var->GetType()->IsRecord() && !var->IsFunc()){
+			res = new Variable(var, pos, line);
+	}
 	else
 		while (true){
 			if (var->IsFunc()){
-				res = ParseFunc(res, &var);
-				f = true;
+				res = ParseFunc(res, &var, pos, line);
+				nextScan = false;
 			}
 			else if (var->GetType()->IsArray()){
-				if (!f)
+				if (nextScan)
 					scan.Next();
 				if (TokVal() != "["){
 					CheckAccess(TokVal(), TokPos(), TokLine());
 					if (res->GetValue() == s)
-						res = new Variable(var);
+						res = new Variable(var, pos, line);
 					nextScan = false;
 					break;
 				}
 				else{
-					res = ParseArr(res, &var);
+					res = ParseArr(res, &var, pos, line);
 					f = true;
 				}
 			}
 			else if (var->GetType()->IsRecord()){
-				if (!f)
+				if (nextScan)
 					scan.Next();
 				if (TokVal() != "."){
 					CheckAccess(TokVal(), TokPos(), TokLine());
 					if (res->GetValue() == s)
-						res = new Variable(var);
+						res = new Variable(var, pos, line);
 					nextScan = false;
 					break;
 				}
 				else{
-					res = ParseRecord(res, &var);
+					res = ParseRecord(res, &var, pos, line);
 					f = true;
 				}
 			} 
 			else
 				break;
+			pos = TokPos();
+			line = TokLine();
 		}
 	type = var->GetType();
 	res->SetType(type);
 	return res;
 }
 
-ArrayAccess* Parser::ParseArr(NodeExpr* res, SymVar** var){
+ArrayAccess* Parser::ParseArr(NodeExpr* res, SymVar** var, int pos, int line){
 	SymType* type = (*var)->GetType();
 	//string s = TokVal();
 	//scan.Next();
 	if (TokVal() == "["){
 		scan.Next();
-		while (TokVal() != "]"){
+		while (true){
 			NodeExpr* expr = ParseSimple(4);
-			CheckIsInt(expr, TokPos(), TokLine());
+			CheckIsInt(expr, expr->GetPos(), expr->GetLine());
 			Symbol* symb = new Symbol("[]");
-			res = new ArrayAccess(symb, res, expr);
-			/*if (expr->IsConst()){
-				if (expr->CountValue() > ((SymTypeArray*)type)->)
-			}*/
+			res = new ArrayAccess(symb, pos, line, res, expr);
+			if (expr->IsConst()){
+				string val = ((SymVarConst*)expr->GetSymbol())->GetValue();
+				string top = ((SymVarConst*)((SymTypeArray*)type)->GetTop())->GetValue();
+				string bottom = ((SymVarConst*)((SymTypeArray*)type)->GetBottom())->GetValue();
+				if (atof(val.c_str()) > atof(top.c_str()) || atof(val.c_str()) < atof(bottom.c_str()))
+					throw Error("Range check error", expr->GetPos(), expr->GetLine());
+			}
 			type = ((SymTypeArray*)type)->GetElemType();
+			if(TokVal() == "]"){
+				if (!nextScan)
+					scan.Next();
+				break;
+			}
 			if (TokVal() == ","){
 				if (!type->IsArray())
 					throw Error("Invalid num of indexes", TokPos(), TokLine());
@@ -643,14 +677,15 @@ ArrayAccess* Parser::ParseArr(NodeExpr* res, SymVar** var){
 					throw Error("Invalid array access", TokPos(), TokLine());
 			}
 		}
-		
+		pos = TokPos();
+		line = TokLine();
 	}
 	*var = new SymVar(toString(id++), type);
 	res->SetType(type);
 	return (ArrayAccess*)res;
 }
 
-FunctionCall* Parser::ParseFunc(NodeExpr* res, SymVar** var){
+FunctionCall* Parser::ParseFunc(NodeExpr* res, SymVar** var, int pos, int line){
 	SymType* type = ((SymFunc*)*var)->GetType();
 	string s = TokVal();
 	scan.Next();
@@ -666,14 +701,14 @@ FunctionCall* Parser::ParseFunc(NodeExpr* res, SymVar** var){
 			NodeExpr* expr = ParseSimple(4);
 			SymVar* curVar = ((SymVar*)(it1->second));
 			if (curVar->IsParamByRef()){
-				if (!EqTypes(expr->GetType(), curVar->GetType()))
-					throw Error("Incompatible types", TokPos(), TokLine());
+				if (!(EqTypes(expr->GetType(), curVar->GetType())))
+					throw Error("Incompatible types", expr->GetPos(), expr->GetLine());
 				if (!expr->LValue())
-					throw Error("Variable identifier expected", TokPos(), TokLine());
+					throw Error("Variable identifier expected", expr->GetPos(), expr->GetLine());
 			}
 			else
-				if (!EqTypes(expr->GetType(), curVar->GetType()) && !(curVar->GetType()->IsFloat() && expr->GetType()->IsInt()))
-					throw Error("Incompatible types", TokPos(), TokLine());
+				if (!EqTypes(expr->GetType(), curVar->GetType()) && !IToR(curVar->GetType(), expr->GetType()))
+					throw Error("Incompatible types", expr->GetPos(), expr->GetLine());
 			args.push_back(expr);
 			++it;
 			if (TokVal() == ","){
@@ -685,18 +720,20 @@ FunctionCall* Parser::ParseFunc(NodeExpr* res, SymVar** var){
 			}
 		}
 	}
+	else
+		nextScan = false;
 	if (it != arg_names->end())
-		throw Error("Invalid prameters num", TokPos(), TokLine());
+		throw Error("Invalid parameters num", TokPos(), TokLine());
 	Symbol* symb = new Symbol(s);
-	res = new FunctionCall(symb, args);
+	res = new FunctionCall(symb, pos, line, args);
 	*var = new SymVar(toString(id++), type);
 	res->SetType(type);
 	return (FunctionCall*)res;
 }
 
-RecordAccess* Parser::ParseRecord(NodeExpr* res, SymVar** var){
+RecordAccess* Parser::ParseRecord(NodeExpr* res, SymVar** var, int pos, int line){
 	string s = TokVal();
-	scan.Next();
+	//scan.Next();
 	SymType* type = (*var)->GetType();
 	NodeExpr* expr = NULL;
 	Symbol* symb = NULL;
@@ -712,18 +749,22 @@ RecordAccess* Parser::ParseRecord(NodeExpr* res, SymVar** var){
 				throw Error("Unknown identifier in record access", TokPos(), TokLine());
 			*var = (SymVar*)(it->second);
 			symb = new Symbol(TokVal());
-			expr = new NodeExpr(symb);
-			res = new RecordAccess(*var, res, expr);
+			expr = new NodeExpr(symb, pos, line);
+			res = new RecordAccess(*var, pos, line, res, expr);
 			scan.Next();
 			if (TokVal() == "."){
 				type = type->GetType();
 				if (!type->IsRecord())
-					throw Error("Invalid record access", TokPos(), TokLine());
+					throw Error("Invalid record access", pos, line);
 				scan.Next();
 			}
-			else 
+			else {
+				nextScan = false;
 				break;
+			}
 		}
+		pos = TokPos();
+		line = TokLine();
 	}
 	nextScan = false; 
 	res->SetType(type);
@@ -746,9 +787,9 @@ NodeExpr* Parser::ParseFactor(){
 		if (!expr1)
 			throw Error("Lexem expected, EOF found", TokPos(), TokLine());
 		Symbol* symb = new Symbol(str);
-		res = new UnaryOp(symb, expr1);
+		res = new UnaryOp(symb, pos, line, expr1);
 		if (!expr1->GetType()->IsScalar())
-			throw Error("Invalid unary operation", TokPos(), TokLine());
+			throw Error("Invalid unary operation", pos, line);
 		res->SetType(expr1->GetType()); 
 	}
 	else if (TokType() == ttIdentifier){
@@ -771,9 +812,9 @@ NodeExpr* Parser::ParseFactor(){
 		if (TokType() == ttIntLit)
 			type = (SymType*)(*table)["INTEGER"];
 		else
-			type = (SymType*)(*table)["FLOAT"];
+			type = (SymType*)(*table)["REAL"];
 		symb = new SymVarConst(TokVal(), TokVal(), type);
-		res = new Const(symb);
+		res = new Const(symb, pos, line);
 		res->SetType(type);
 		scan.Next();
 	}

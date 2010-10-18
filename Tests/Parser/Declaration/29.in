@@ -1,5 +1,5 @@
 Const MAX = 5; 
-type stringg = float;
+type stringg = real;
 Type sportsman = record
 Fml: Stringg;
 Cnt: Stringg;
@@ -7,7 +7,7 @@ God: Integer;
 Rez: Integer;
 End;
 Var a: Array[1..MAX] of sportsman;
-i: float;
+i: real;
 s: Stringg;
 mx: sportsman;
 j: Integer; 

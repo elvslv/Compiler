@@ -1,6 +1,6 @@
 type RR = record 
-    var M : FLOAT;
-    var N : FLOAT;
+    var M : REAL;
+    var N : REAL;
 end;
 var A : RR;
 11 5 Invalid lexem in constant declaration

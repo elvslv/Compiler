@@ -1,1 +1,1 @@
-var C, E : array [1..20] of array [30..1000] of array [27..28] of FLOAT;
+var C, E : array [1..20] of array [30..1000] of array [27..28] of real;

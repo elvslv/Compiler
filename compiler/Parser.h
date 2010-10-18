@@ -38,7 +38,7 @@ public:
 	virtual bool IsRecord() {return false;}
 	virtual void Print(ostream& os, bool f) { os << name; }
 	virtual bool IsInt() {return false;}
-	virtual bool IsFloat() {return false;}
+	virtual bool IsReal() {return false;}
 	virtual bool IsScalar() {return false;}
 	virtual bool IsAlias() {return false; }
 };
@@ -112,10 +112,10 @@ public:
 	virtual bool IsScalar() {return true;}
 };
 
-class SymTypeFloat: public SymTypeScalar{
+class SymTypeReal: public SymTypeScalar{
 public:
-	SymTypeFloat(string s): SymTypeScalar(s){};
-	bool IsFloat() {return true;}
+	SymTypeReal(string s): SymTypeScalar(s){};
+	bool IsReal() {return true;}
 };
 
 class SymTypeInteger: public SymTypeScalar{
@@ -164,7 +164,7 @@ public:
 		}
 	}
 	bool IsInt() {return refType->IsInt(); }
-	bool IsFloat() {return refType->IsFloat();}
+	bool IsReal() {return refType->IsReal();}
 	bool IsScalar() {return refType->IsScalar();}
 	bool IsAlias() {return true; }
 	SymType* GetRefType() {return refType; }
@@ -259,6 +259,8 @@ public:
 		}
 	}
 	SymType* GetElemType() {return elemType; }
+	SymVarConst* GetBottom() {return bottom; }
+	SymVarConst* GetTop() {return top; }
 private:
 	SymType* elemType;
 	SymVarConst* bottom; SymVarConst* top;
@@ -276,30 +278,30 @@ bool IsIntOperator(string val);
 
 class NodeExpr: public SyntaxNode{
 public:
-	NodeExpr(Symbol* symb): symbol(symb){type = NULL;};
+	NodeExpr(Symbol* symb, int p, int l): symbol(symb), pos(p), line(l){type = NULL;};
 	void Print(ostream& os, int n);
 	virtual int FillTree(int i, int j){return FillTreeIdentConst_(i, j, GetValue());}
 	string GetValue() { return symbol->GetName(); }
-	virtual bool LValue() { return false; }
+	virtual bool LValue(){return true;}
 	virtual bool IsFunction() {return false; }
 	virtual bool IsInt() {return false; }
 	virtual bool IsConst() {return false; }
+	virtual bool IsBinaryOp() {return false; }
 	void SetType(SymType* t) {type = t; }
 	SymType* GetType() {return type;}
 	Symbol* GetSymbol() {return symbol; }
+	int GetPos() {return pos;}
+	int GetLine() {return line;}
 protected:
 	Symbol* symbol;
 	SymType* type;
-};
-
-class StatementAssign: public NodeStatement{
-private:
-	NodeExpr* left, right;
+	int pos;
+	int line;
 };
 
 class Variable: public NodeExpr{
 public:
-	Variable(SymVar* symb): NodeExpr(symb) {};
+	Variable(SymVar* symb, int p, int l): NodeExpr(symb, p, l) {};
 	int FillTree(int i, int j);
 	bool LValue() {return true; }
 	bool IsInt() {return symbol->GetType()->IsInt(); }
@@ -307,7 +309,7 @@ public:
 
 class Const: public NodeExpr{
 public:
-	Const(SymVarConst* symb): NodeExpr(symb){};
+	Const(SymVarConst* symb, int p, int l): NodeExpr(symb, p, l){};
 	int FillTree(int i, int j);
 	bool LValue() {return false; }
 	bool IsInt() {return symbol->GetType()->IsInt(); }
@@ -316,11 +318,11 @@ public:
 
 class BinaryOp: public NodeExpr{
 public: 
-	BinaryOp(Symbol* symb, NodeExpr* l, NodeExpr* r) : NodeExpr(symb), left(l), right(r) {};
+	BinaryOp(Symbol* symb, int p, int ll, NodeExpr* l, NodeExpr* r) : NodeExpr(symb, p, ll), left(l), right(r) {};
 	int FillTree(int i, int j);
 	bool LValue() {return false; }
 	bool IsInt() {return right->IsInt() && left->IsInt() && IsIntOperator(GetValue()); }
-	bool IsConst() {return right->IsConst() && left->IsConst(); }
+	bool IsBinaryOp() {return true; }
 	NodeExpr* GetLeft() {return left;}
 	NodeExpr* GetRight() {return right;}
 protected:
@@ -330,18 +332,18 @@ protected:
 
 class ArrayAccess: public BinaryOp{
 public: 
-	ArrayAccess(Symbol* symb, NodeExpr* l, NodeExpr* r): BinaryOp(symb, l, r){};
+	ArrayAccess(Symbol* symb, int p, int ll, NodeExpr* l, NodeExpr* r): BinaryOp(symb, p, ll, l, r){};
 	int FillTree(int i, int j);
 	bool IsIdent() { return true; }
-	bool LValue() {return true; }
+	bool LValue() {return left->LValue(); }
 	bool IsInt() {return left->IsInt(); }
 };
 
 class RecordAccess: public NodeExpr{
 public: 
-	RecordAccess(Symbol* symb, NodeExpr* l, NodeExpr* r): NodeExpr(symb), left(l), right(r){};
+	RecordAccess(Symbol* symb, int p, int ll, NodeExpr* l, NodeExpr* r): NodeExpr(symb, p, ll), left(l), right(r){};
 	int FillTree(int i, int j);
-	bool LValue() {return true; }
+	bool LValue() {return left->LValue(); }
 	bool IsInt() {return right->IsInt(); }
 private:
 	NodeExpr* left;
@@ -350,7 +352,7 @@ private:
 
 class FunctionCall: public NodeExpr{
 public: 
-	FunctionCall(Symbol* symb, list<NodeExpr*> ar): NodeExpr(symb), args(ar){}
+	FunctionCall(Symbol* symb, int p, int l, list<NodeExpr*> ar): NodeExpr(symb, p, l), args(ar){}
 	int FillTree(int i, int j);
 	bool LValue() {return false; }
 	bool IsInt() {return symbol->GetType()->IsInt(); }
@@ -360,11 +362,10 @@ private:
 
 class UnaryOp: public NodeExpr{
 public: 
-	UnaryOp(Symbol* symb, NodeExpr* ch): NodeExpr(symb), child(ch){}
+	UnaryOp(Symbol* symb, int p, int l, NodeExpr* ch): NodeExpr(symb, p, l), child(ch){}
 	int FillTree(int i, int j);
 	bool LValue() {return false; }
 	bool IsInt() {return child->IsInt() && IsIntOperator(GetValue()); }
-	bool IsConst() {return child->IsConst(); }
 private:
 	NodeExpr* child;
 };
@@ -378,9 +379,9 @@ public:
 		isRecord = false;
 		isAccess = false;
 		SymTypeInteger* i = new SymTypeInteger("INTEGER");
-		SymTypeFloat* f = new SymTypeFloat("FLOAT");
+		SymTypeReal* f = new SymTypeReal("REAL");
 		table->insert(Sym("INTEGER", i));
-		table->insert(Sym("FLOAT", f));
+		table->insert(Sym("REAL", f));
 		curIdent = "";
 		nextScan = true;
 	}
@@ -394,9 +395,9 @@ private:
 	NodeExpr* ParseNext();
 	Const* ParseConst();
 	NodeExpr* ParseVariable(NodeExpr* res);
-	ArrayAccess* ParseArr(NodeExpr* res, SymVar** var);
-	RecordAccess* ParseRecord(NodeExpr* res, SymVar** var);
-	FunctionCall* ParseFunc(NodeExpr* res, SymVar** var);
+	ArrayAccess* ParseArr(NodeExpr* res, SymVar** var, int pos, int line);
+	RecordAccess* ParseRecord(NodeExpr* res, SymVar** var, int pos, int line);
+	FunctionCall* ParseFunc(NodeExpr* res, SymVar** var, int pos, int line);
 	void ParseAssignment();
 	void ParseTypeBlock();
 	SymType* ParseType(bool newType);

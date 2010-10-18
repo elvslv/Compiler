@@ -1,8 +1,6 @@
-type trec = record x: integer; end;
-type tarr = array[1..10] of trec; 
-function func: tarr; forward;
-var i: integer;
-a: trec;
+type tt = integer;
+var a, b: array[1..10, 1..20] of real;
+i, j: tt;
 begin
-	a := func[12];
+	a[i][j] := b[j, i];
 end.

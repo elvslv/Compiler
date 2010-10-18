@@ -1,10 +1,27 @@
 type TT = INTEGER;
-var A : array [const 1..const 10] of array [const 1..const 20] of FLOAT;
-var B : array [const 1..const 10] of array [const 1..const 20] of FLOAT;
+var A : array [const 1..const 10] of array [const 1..const 20] of REAL;
+var B : array [const 1..const 10] of array [const 1..const 20] of REAL;
 var I : TT;
 var J : TT;
-[]   
-|    
-|___A
-|    
-|___I
+
+:=           
+|            
+|___[]       
+|   |        
+|   |___[]   
+|   |   |    
+|   |   |___A
+|   |   |    
+|   |   |___I
+|   |        
+|   |___J    
+|            
+|___[]       
+    |        
+    |___[]   
+    |   |    
+    |   |___B
+    |   |    
+    |   |___J
+    |        
+    |___I    

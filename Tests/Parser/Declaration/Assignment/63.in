@@ -1,5 +1,5 @@
-function func(i: integer; j: float): integer;
-var a, j: float;
+function func(i: integer; j: real): integer; forward; 
+var a, j: real;
 i: integer;
 begin
 	a := func(i, j);

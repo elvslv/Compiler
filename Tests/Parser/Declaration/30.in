@@ -1,7 +1,7 @@
 var a: integer;
-b: float;
+b: real;
 c: array[1..10] of integer;
-d: array[1..9, 10..19] of float;
+d: array[1..9, 10..19] of real;
 const m = 10;
 t = 12;
 pi = 3.141592653;
@@ -12,8 +12,8 @@ t1 = record
 a: integer;
 b: int;
 end;
-t2 = array[1..20, 10..15] of float;
+t2 = array[1..20, 10..15] of real;
 function trrr: integer; forward;
-function trrrr(var a: integer; b: float): float; forward;
+function trrrr(var a: integer; b: real): real; forward;
 procedure proc; forward;
-procedure proc1(i: integer; var m, f: float); forward;
+procedure proc1(i: integer; var m, f: real); forward;

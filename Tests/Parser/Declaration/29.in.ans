@@ -1,5 +1,5 @@
 const MAX = 5; 
-type STRINGG = FLOAT;
+type STRINGG = REAL;
 type SPORTSMAN = record 
     var CNT : STRINGG;
     var FML : STRINGG;
@@ -7,7 +7,7 @@ type SPORTSMAN = record
     var REZ : INTEGER;
 end;
 var A : array [const 1..const MAX] of SPORTSMAN;
-var I : FLOAT;
+var I : REAL;
 var S : STRINGG;
 var MX : SPORTSMAN;
 var J : INTEGER;

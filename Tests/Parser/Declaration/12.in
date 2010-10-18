@@ -6,5 +6,5 @@ end;
 var a: my_int;
 const m = 28;
 var r: record
-	c: float;
+	c: real;
 end;

@@ -1,2 +1,2 @@
 const M = 25; 
-var T : array [const 1..const M] of FLOAT;
+var T : array [const 1..const M] of REAL;

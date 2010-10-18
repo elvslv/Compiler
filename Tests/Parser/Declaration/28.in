@@ -4,8 +4,8 @@ MAXCOL = 20;
 type
 ColType = array [1.. MAXROW] of Integer;
 var
-exit : float; 
-change : float; 
+exit : real; 
+change : real; 
 nrow : Integer; 
 ncol : ColType;
 col : ColType; 

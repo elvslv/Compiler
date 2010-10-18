@@ -1,2 +1,2 @@
 type my_int = integer;
-function func(var a: integer; var b: float; c: my_int): my_int; forward;
+function func(var a: integer; var b: real; c: my_int): my_int; forward;

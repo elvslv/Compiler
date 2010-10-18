@@ -1,0 +1,22 @@
+type TREC = record 
+    var X : INTEGER;
+end;
+type TARR = array [const 1..const 10] of TREC;
+function FUNC: TARR;
+var I : INTEGER;
+
+:=                  
+|                   
+|___I               
+|                   
+|___.               
+    |               
+    |___[]          
+    |   |           
+    |   |___()      
+    |   |   |       
+    |   |   |___FUNC
+    |   |           
+    |   |___5       
+    |               
+    |___X           

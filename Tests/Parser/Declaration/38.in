@@ -11,6 +11,6 @@ type
 var q: TLongLong;
 
 type
-  TMegaPoints = record x, y, z: TLongLong; a, b, c: float; end;
+  TMegaPoints = record x, y, z: TLongLong; a, b, c: real; end;
 
 var w: TMegaPoints;
