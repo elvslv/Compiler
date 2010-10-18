@@ -6,38 +6,41 @@
 #include <list>
 #include "Scanner.h"
 using namespace std;
+int FillTreeBinOp(int i, int j, string Value, Expr* left, Expr* right);
 
 class Expr{
 public:
 	Expr(){ Value = ""; }
 	Expr(string str): Value(str){};
-	void Print(ostream& os, int n);
 	virtual int FillTree(int i, int j){return 0;}
 	string GetValue() { return Value; }
 	virtual bool LValue() { return false; }
 	virtual bool IsFunction() {return false; }
+	void Print(ostream& os, int n) {
+		int h = FillTree(0, 0) - 1;
+		PrintExpr(os, h);
+	}
 protected:
 	string Value;
 };
 
-
 class SimpleIdent: public Expr{
 public:
 	SimpleIdent(string val){ Value = val; }
-	int FillTree(int i, int j);
 	bool LValue() { return true; }
+	int FillTree(int i, int j){	return FillTreeIdentConst(i, j, Value);	}
 };
 
 class SimpleConst: public Expr{
 public:
 	SimpleConst(string val){ Value = val; }
-	int FillTree(int i, int j);
+	int FillTree(int i, int j){	return FillTreeIdentConst(i, j, Value); }
 };
 
 class SimpleBinaryOp: public Expr{
 public: 
 	SimpleBinaryOp(string val, Expr* l, Expr* r) : left(l), right(r) { Value = val; }
-	int FillTree(int i, int j);
+	int FillTree(int i, int j){	return FillTreeBinOp(i, j, Value, left, right); }
 protected:
 	Expr* right;
 	Expr* left;
@@ -46,15 +49,15 @@ protected:
 class SimpleArrayAccess: public SimpleBinaryOp{
 public: 
 	SimpleArrayAccess(string val, Expr* l, Expr* r): SimpleBinaryOp(val, l, r){};
-	int FillTree(int i, int j);
 	bool LValue() { return true; }
+	int FillTree(int i, int j){	return FillTreeBinOp(i, j, Value, left, right); }
 };
 
 class SimpleRecordAccess: public Expr{
 public: 
 	SimpleRecordAccess(string val, Expr* l, Expr* r): left(l), right(r) {Value = val;}
-	int FillTree(int i, int j);
 	bool LValue() { return true; }
+	int FillTree(int i, int j){	return FillTreeBinOp(i, j, Value, left, right); }
 private:
 	Expr* right;
 	Expr* left;
@@ -105,9 +108,7 @@ private:
 	string TokVal() {return UpCase(scan.GetToken()->GetValue()); }
 	int TokPos() {return scan.GetToken()->GetPos();}
 	int TokLine() {return scan.GetToken()->GetLine();}
-	int FindOpPrior(string str);
 	Scanner& scan;
-	void FillMaps();
 	bool isRecord;
 	bool isAccess;
 };

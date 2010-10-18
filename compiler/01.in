@@ -1,6 +1,2 @@
-type tt = integer;
-var a, b: array[1..10, 1..20] of real;
-i, j: tt;
-begin
-	a[i][j] := b[j, i];
-end.
+const m = 5;
+t = 10;

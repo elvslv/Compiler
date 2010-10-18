@@ -1,4 +1,4 @@
-const T = 12.3456; 
+const T = 12.3456;
 var A : record 
     var A : INTEGER;
 end;

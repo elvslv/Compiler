@@ -1,4 +1,4 @@
-const MAX = 5; 
+const MAX = 5;
 type STRINGG = REAL;
 type SPORTSMAN = record 
     var CNT : STRINGG;

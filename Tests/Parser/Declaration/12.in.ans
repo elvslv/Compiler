@@ -5,7 +5,7 @@ type TT = record
     var M : MY_INT;
 end;
 var A : MY_INT;
-const M = 28; 
+const M = 28;
 var R : record 
     var C : REAL;
 end;

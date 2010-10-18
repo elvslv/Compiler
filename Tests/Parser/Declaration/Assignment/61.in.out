@@ -2,7 +2,7 @@ type TREC = record
     var X : array [const 1..const 6] of REAL;
 end;
 var A : TREC;
-const EPS = 0.1; 
+const EPS = 0.1;
 
 :=           
 |            

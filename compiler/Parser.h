@@ -6,7 +6,8 @@
 #include <list>
 #include "ExprParser.h"
 using namespace std;
-string UpCase(string s);
+
+bool IsIntOperator(string val);
 
 class SymType;
 
@@ -272,15 +273,10 @@ class SyntaxNode{
 class NodeStatement: public SyntaxNode{
 };
 
-int FindOpPrior(string str);
-int FillTreeIdentConst_(int i, int j, string val);
-bool IsIntOperator(string val);
-
 class NodeExpr: public SyntaxNode{
 public:
 	NodeExpr(Symbol* symb, int p, int l): symbol(symb), pos(p), line(l){type = NULL;};
-	void Print(ostream& os, int n);
-	virtual int FillTree(int i, int j){return FillTreeIdentConst_(i, j, GetValue());}
+	virtual int FillTree(int i, int j){return FillTreeIdentConst(i, j, GetValue());}
 	string GetValue() { return symbol->GetName(); }
 	virtual bool LValue(){return true;}
 	virtual bool IsFunction() {return false; }
@@ -292,6 +288,11 @@ public:
 	Symbol* GetSymbol() {return symbol; }
 	int GetPos() {return pos;}
 	int GetLine() {return line;}
+	void Print(ostream& os, int n) {
+		ClearArr();
+		int h = FillTree(0, 0) - 1;
+		PrintExpr(os, h);
+	}
 protected:
 	Symbol* symbol;
 	SymType* type;
@@ -302,29 +303,31 @@ protected:
 class Variable: public NodeExpr{
 public:
 	Variable(SymVar* symb, int p, int l): NodeExpr(symb, p, l) {};
-	int FillTree(int i, int j);
 	bool LValue() {return true; }
 	bool IsInt() {return symbol->GetType()->IsInt(); }
+	int FillTree(int i, int j){ return FillTreeIdentConst(i, j, GetValue());}
 };
 
 class Const: public NodeExpr{
 public:
 	Const(SymVarConst* symb, int p, int l): NodeExpr(symb, p, l){};
-	int FillTree(int i, int j);
 	bool LValue() {return false; }
 	bool IsInt() {return symbol->GetType()->IsInt(); }
 	bool IsConst() {return true; }
+	int FillTree(int i, int j) { return FillTreeIdentConst(i, j, GetValue());}
 };
+
+int FillTreeBinOp(int i, int j, string Value, NodeExpr* left, NodeExpr* right);
 
 class BinaryOp: public NodeExpr{
 public: 
 	BinaryOp(Symbol* symb, int p, int ll, NodeExpr* l, NodeExpr* r) : NodeExpr(symb, p, ll), left(l), right(r) {};
-	int FillTree(int i, int j);
 	bool LValue() {return false; }
 	bool IsInt() {return right->IsInt() && left->IsInt() && IsIntOperator(GetValue()); }
 	bool IsBinaryOp() {return true; }
 	NodeExpr* GetLeft() {return left;}
 	NodeExpr* GetRight() {return right;}
+	int FillTree(int i, int j){ return FillTreeBinOp(i, j, GetValue(), left, right);}
 protected:
 	NodeExpr* right;
 	NodeExpr* left;
@@ -333,18 +336,18 @@ protected:
 class ArrayAccess: public BinaryOp{
 public: 
 	ArrayAccess(Symbol* symb, int p, int ll, NodeExpr* l, NodeExpr* r): BinaryOp(symb, p, ll, l, r){};
-	int FillTree(int i, int j);
 	bool IsIdent() { return true; }
 	bool LValue() {return left->LValue(); }
 	bool IsInt() {return left->IsInt(); }
+	int FillTree(int i, int j){return FillTreeBinOp(i, j, GetValue(), left, right);}
 };
 
 class RecordAccess: public NodeExpr{
 public: 
 	RecordAccess(Symbol* symb, int p, int ll, NodeExpr* l, NodeExpr* r): NodeExpr(symb, p, ll), left(l), right(r){};
-	int FillTree(int i, int j);
 	bool LValue() {return left->LValue(); }
 	bool IsInt() {return right->IsInt(); }
+	int FillTree(int i, int j) {return FillTreeBinOp(i, j, ".", left, right);}
 private:
 	NodeExpr* left;
 	NodeExpr* right;
@@ -353,9 +356,9 @@ private:
 class FunctionCall: public NodeExpr{
 public: 
 	FunctionCall(Symbol* symb, int p, int l, list<NodeExpr*> ar): NodeExpr(symb, p, l), args(ar){}
-	int FillTree(int i, int j);
 	bool LValue() {return false; }
 	bool IsInt() {return symbol->GetType()->IsInt(); }
+	int FillTree(int i, int j);
 private:
 	list<NodeExpr*> args;
 };
@@ -369,6 +372,8 @@ public:
 private:
 	NodeExpr* child;
 };
+
+string UpCase(string s);
 
 class Parser{
 public:
@@ -401,13 +406,12 @@ private:
 	void ParseAssignment();
 	void ParseTypeBlock();
 	SymType* ParseType(bool newType);
-	void ParseVarBlock();
 	SymVar* ParseVar();
 	void ParseConstBlock();
+	void ParseTypeConstBlock(string b_name);
+	SymTable* ParseVarRecordBlock(string b_name);
 	SymVarConst* ParseConst(bool newConst);
-	SymFunc* ParseFunction(bool newFunc);
-	SymProc* ParseProcedure(bool newProc);
-	SymTable* ParseRecordBlock();
+	SymProc* ParseProcedure(bool newProc, bool func);
 	SymTypeArray* ParseArray();
 	SymTable* GetArgs(string name, list<string>** arg_names);
 	void CheckEof();
@@ -416,12 +420,11 @@ private:
 	int TokPos() {return scan.GetToken()->GetPos();}
 	int TokLine() {return scan.GetToken()->GetLine();}
 	string CheckCurTok(string blockName, SymTable* tbl);
-	int FindOpPrior(string str);
+	void CheckProcDecl();
 	Scanner& scan;
 	ostream& os;
 	SymTable* table;
 	string curIdent;
-	void FillMaps();
 	bool isRecord;
 	bool isAccess;
 	bool nextScan;

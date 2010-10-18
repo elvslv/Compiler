@@ -1,5 +1,5 @@
-const MAXROW = 14; 
-const MAXCOL = 20; 
+const MAXROW = 14;
+const MAXCOL = 20;
 type COLTYPE = array [const 1..const MAXROW] of INTEGER;
 var EXIT : REAL;
 var CHANGE : REAL;

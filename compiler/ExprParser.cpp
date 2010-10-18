@@ -1,8 +1,4 @@
 #include "ExprParser.h"
-map<string, int> exprPriority;
-const int exprArrSize = 500;
-char exprArr[exprArrSize][exprArrSize];
-static int maxLength = 0;
 
 template <typename T>
 std::string toString(T val)
@@ -11,60 +7,12 @@ std::string toString(T val)
     oss << val;
     return oss.str();
 }
-
-int PaintBranch(int i, int j, int k, int h, bool f){
-	for (; k < h; ++k)
-		exprArr[++j][i] = '|';
-	exprArr[j][i] = '|';
-	if (f)
-		for (unsigned int k = 0; k < 3; ++k)
-			exprArr[j][i + k + 1] = '_';
-	return j;
-}
-
-int FillTreeIdentConst(int i, int j, string val){
-	unsigned int k = 0;
-	for (; k < val.length(); ++k)
-		exprArr[j][i + k] = val[k];
-	if (i + k > maxLength)
-		maxLength = i + k;
-	return 2;
-}
-
-int FillTreeOp(int i, int j, string val){
-	unsigned int k = 0;
-	for (; k < val.length(); ++k)
-		exprArr[j][i + k] = val[k];
-	j = PaintBranch(i, j, 0, 2, true);
-	return j;
-}
-
 int FillTreeBinOp(int i, int j, string Value, Expr* left, Expr* right){
 	j = FillTreeOp(i, j, Value);
 	int hl = left->FillTree(i + 4, j);
 	j = PaintBranch(i, j, 0, hl, true);
 	int hr = right->FillTree(i + 4, j);
 	return hl + hr + 2;
-}
-
-int SimpleIdent::FillTree(int i, int j){
-	return FillTreeIdentConst(i, j, Value);
-}
-
-int SimpleConst::FillTree(int i, int j){
-	return FillTreeIdentConst(i, j, Value);
-}
-
-int SimpleBinaryOp::FillTree(int i, int j){
-	return FillTreeBinOp(i, j, Value, left, right);
-}
-
-int SimpleArrayAccess::FillTree(int i, int j){
-	return FillTreeBinOp(i, j, Value, left, right);
-}
-
-int SimpleRecordAccess::FillTree(int i, int j){
-	return FillTreeBinOp(i, j, Value, left, right);
 }
 
 int SimpleFunctionCall::FillTree(int i, int j){
@@ -88,15 +36,6 @@ int SimpleUnaryOp::FillTree(int i, int j){
 	j = FillTreeOp(i, j, Value);
 	int h = child->FillTree(i + 4, j);
 	return h + 2;
-}
-
-void Expr::Print(ostream& os, int n){
-	int h = FillTree(0, 0) - 1;
-	for (int i = 0; i < h; ++i){
-		for (int j = 0; j < maxLength; ++j)
-			os << exprArr[i][j];
-		os << "\n";
-	}
 }
 
 Expr* ExprParser::ExprParse(int prior){
@@ -229,21 +168,4 @@ Expr* ExprParser::ExprParseFactor(){
 	else
 		throw Error("Unexpected lexem found", pos, line);
 	return res;
-}
-
-void ExprParser::FillMaps(){
-	exprPriority["NOT"] = 1; 
-	exprPriority["*"] = 2; exprPriority["/"] = 2; exprPriority["DIV"] = 2; exprPriority["MOD"] = 2; 
-	exprPriority["AND"] = 2; exprPriority["SHL"] = 2; exprPriority["SHR"] = 2; 
-	exprPriority["-"] = 3; exprPriority["+"] = 3; exprPriority["OR"] = 3; exprPriority["XOR"] = 3;
-	exprPriority["="] = 4; exprPriority["<>"] = 4; exprPriority["<"] = 4;	exprPriority["<="] = 4; exprPriority[">"] = 4; 
-	exprPriority[">="] = 4;
-	memset(exprArr, ' ', exprArrSize * exprArrSize);
-}
-
-int ExprParser::FindOpPrior(string str){
-	map<string, int>::iterator it;
-	transform(str.begin(), str.end(), str.begin(), toupper);
-	it = exprPriority.find(str);
-	return (it != exprPriority.end()) ? it->second : 0;
 }

@@ -1,5 +1,5 @@
 var A : INTEGER;
-const MAXN = 10; 
+const MAXN = 10;
 type TT = INTEGER;
 type TLONG = array [const 1..const MAXN] of TT;
 type TLONGLONG = array [const 1..const 20] of TLONG;

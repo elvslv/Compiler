@@ -1,4 +1,4 @@
-const N = 9; 
+const N = 9;
 type MAS = array [const 1..const N] of array [const 1..const N] of INTEGER;
 var M : MAS;
 var I : INTEGER;

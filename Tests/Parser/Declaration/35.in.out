@@ -8,4 +8,4 @@ type TRECORDARRAY = record
 end;
 var B : TRECORDARRAY;
 var C : TRECORDARRAY;
-const MAXN = 1000; 
+const MAXN = 1000;

@@ -5,6 +5,10 @@
 #include <string>
 #include <algorithm>
 using namespace std;
+const int arrSize = 500;
+static char arr[arrSize][arrSize];
+static int maxLength = 0;
+static map<string, int> priority;
 enum State
 {
 	stNewLex, 
@@ -56,6 +60,13 @@ enum TokenType{
 	ttSpecSymb, 
 
 };
+int FindOpPrior(string str);
+void FillMaps();
+void ClearArr();
+void PrintExpr(ostream& os, int n);
+int PaintBranch(int i, int j, int k, int h, bool f);
+int FillTreeIdentConst(int i, int j, string val);
+int FillTreeOp(int i, int j, string val);
 bool IsKeyWord(string tmp);
 bool IsAlpha(char ch);
 bool IsDigit(char ch);
@@ -68,7 +79,6 @@ class Expr;
 int PaintBranch(int i, int j, int k, int h, bool f);
 int FillTreeIdentConst(int i, int j, string val);
 int FillTreeOp(int i, int j, string val);
-int FillTreeBinOp(int i, int j, string Value, Expr* left, Expr* right);
 int FindOpPrior(string str);
 bool IsUnaryOp(string str);
 bool IsLiteral(TokenType tt);
