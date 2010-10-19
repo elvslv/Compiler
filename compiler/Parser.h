@@ -7,8 +7,6 @@
 #include "ExprParser.h"
 using namespace std;
 
-bool IsIntOperator(string val);
-
 class SymType;
 
 class Symbol{
@@ -50,11 +48,7 @@ public:
 	virtual bool IsVar() {return true;}
 	virtual bool IsParamByRef() {return false; }
 	virtual SymType* GetType() {return type; }
-	virtual void Print(ostream& os, bool f) { 
-		os << "var "<< name << " : "; 
-		type->Print(os, f); 
-		os << ";";
-	}
+	virtual void Print(ostream& os, bool f);
 protected:
 	SymType* type;
 };
@@ -63,17 +57,7 @@ class SymProc: public Symbol{
 public:
 	SymProc(string s, SymTable* ar, SymTable* loc, list<string>* names): Symbol(s), args(ar), locals(loc), argNames(names) {};
 	virtual bool IsProc() {return true;}
-	virtual void Print(ostream& os, bool f) { 
-		os << "procedure "<< name;
-		if (!args->empty()){	
-			os << "(";  
-			int i = 0;
-			for (SymTable::iterator it = args->begin(); it != args->end(); ++it)
-				(*it->second).Print(os, false);
-			os << ")";
-		}
-		os << ";";
-	}
+	void Print(ostream& os, bool f);
 	SymTable* GetArgsTable() {return args;}
 	list<string>* GetArgNames() {return argNames;}
 protected:
@@ -87,19 +71,7 @@ public:
 	bool IsProc() {return false;}
 	bool IsFunc() {return true;}
 	SymFunc(string s, SymTable* ar, SymTable* loc, list<string>* names, SymType* t): SymProc(s, ar, loc, names), type(t) {};
-	void Print(ostream& os, bool f) { 
-		os << "function " << name;
-		if (!args->empty()){	
-			os << "(";  
-			int i = 0;
-			for (SymTable::iterator it = args->begin(); it != args->end(); ++it)
-				(*it->second).Print(os, false);
-			os << ")";
-		}
-		os << ": ";
-		type->Print(os, false);
-		os << ";";
-	}
+	void Print(ostream& os, bool f);
 	SymTable* GetArgsTable() {return args;}
 	list<string>* GetArgNames() {return argNames;}
 	SymType* GetType() {return type; }
@@ -129,24 +101,7 @@ class SymTypeRecord: public SymType{
 public:
 	SymTypeRecord(string s, SymTable* f): SymType(s), fields(f) {};
 	bool IsRecord() {return true;}
-	void Print(ostream& os, bool f) {
-		if (!f)
-			os << name;
-		else{
-			if (name != "" && (name[0] < '0' || name[0] > '9'))
-				os << "type " << name << " = ";
-			os << "record \n";
-			for (SymTable::iterator it = fields->begin(); it != fields->end(); ++it){
-				os << "    ";
-				if ((*it->second).IsVar() && (*it->second).GetType()->GetName()[0] >= '0' && (*it->second).GetType()->GetName()[0] <= '9')
-					(*it->second).Print(os, true);
-				else
-					(*it->second).Print(os, false);
-				os << "\n";
-			}
-			os << "end";
-		}
-	}
+	void Print(ostream& os, bool f);
 	SymTable* GetFileds() {return fields; }
 private:
 	SymTable* fields;
@@ -155,15 +110,7 @@ private:
 class SymTypeAlias: public SymType{
 public:
 	SymTypeAlias(string s, SymType* rt): SymType(s), refType(rt){};
-	void Print(ostream& os, bool f) { 
-		if (!f)
-			os << name;
-		else{
-			if (name != "" && !(name[0] >= '0' && name[0] <= '9'))
-				os << "type "<< name << " = ";
-			refType->Print(os, false);
-		}
-	}
+	void Print(ostream& os, bool f);
 	bool IsInt() {return refType->IsInt(); }
 	bool IsReal() {return refType->IsReal();}
 	bool IsScalar() {return refType->IsScalar();}
@@ -176,16 +123,7 @@ private:
 class SymTypePointer: public SymType{
 public:
 	SymTypePointer(string s, SymType* rt): SymType(s), refType(rt){};
-	void Print(ostream& os, bool f) { 
-		if (!f)
-			os << name;
-		else{
-			if (name != "" && !(name[0] >= '0' && name[0] <= '9') && f)
-				os << "type "<< name << " = ";
-			os << "^";  
-			refType->Print(os, false);
-		}
-	}
+	void Print(ostream& os, bool f);
 	bool IsInt() {return false; }
 private:
 	SymType* refType;
@@ -204,16 +142,7 @@ public:
 class SymVarConst: public SymVar{
 public:
 	SymVarConst(string s, string v, SymType* t): SymVar(s, t), val(v){};
-	virtual void Print(ostream& os, bool f) { 
-		if (!f && !(name == "" || (name[0] >= '0' && name[0] <= '9')))
-			os << "const " << name;
-		else{
-			if (name == "" || (name[0] >= '0' && name[0] <= '9'))
-				os << "const " << val;
-			else
-				os << "const " << name << " = " << val;
-		}
-	}
+	virtual void Print(ostream& os, bool f);
 	bool IsConst() {return true; }
 	string GetValue() {return val; }
 private:
@@ -233,11 +162,7 @@ public:
 class SymVarParamByRef: public SymVarParam{
 public:
 	SymVarParamByRef(string s, SymType* t): SymVarParam(s, t){};
-	void Print(ostream& os, bool f) { 
-		os << "var (by ref) "<< name << " : "; 
-		type->Print(os, false); 
-		os << ";";
-	}
+	void Print(ostream& os, bool f);
 	virtual bool IsParamByRef() {return true; }
 };
 
@@ -245,20 +170,7 @@ class SymTypeArray: public SymType{
 public:
 	SymTypeArray(string s, SymType* type, SymVarConst* b, SymVarConst* t): SymType(s), elemType(type), bottom(b), top(t) {};
 	bool IsArray() {return true;}
-	void Print(ostream& os, bool f) {
-		if (!f)
-			os << name;
-		else{
-			if (name != "" && (name[0] < '0' || name[0] > '9'))
-				os << "type " << name << " = ";
-			os << "array [";
-			bottom->Print(os, false);
-			os << "..";
-			top->Print(os, false);
-			os << "] of ";
-			elemType->Print(os, elemType->GetName()[0] >= '0' && elemType->GetName()[0] <= '9');
-		}
-	}
+	void Print(ostream& os, bool f);
 	SymType* GetElemType() {return elemType; }
 	SymVarConst* GetBottom() {return bottom; }
 	SymVarConst* GetTop() {return top; }
@@ -338,7 +250,7 @@ public:
 	ArrayAccess(Symbol* symb, int p, int ll, NodeExpr* l, NodeExpr* r): BinaryOp(symb, p, ll, l, r){};
 	bool IsIdent() { return true; }
 	bool LValue() {return left->LValue(); }
-	bool IsInt() {return left->IsInt(); }
+	bool IsInt() { return GetType()->IsInt(); }
 	int FillTree(int i, int j){return FillTreeBinOp(i, j, GetValue(), left, right);}
 };
 
@@ -346,7 +258,7 @@ class RecordAccess: public NodeExpr{
 public: 
 	RecordAccess(Symbol* symb, int p, int ll, NodeExpr* l, NodeExpr* r): NodeExpr(symb, p, ll), left(l), right(r){};
 	bool LValue() {return left->LValue(); }
-	bool IsInt() {return right->IsInt(); }
+	bool IsInt() { return GetType()->IsInt(); }
 	int FillTree(int i, int j) {return FillTreeBinOp(i, j, ".", left, right);}
 private:
 	NodeExpr* left;
@@ -357,7 +269,7 @@ class FunctionCall: public NodeExpr{
 public: 
 	FunctionCall(Symbol* symb, int p, int l, list<NodeExpr*> ar): NodeExpr(symb, p, l), args(ar){}
 	bool LValue() {return false; }
-	bool IsInt() {return symbol->GetType()->IsInt(); }
+	bool IsInt() {return GetType()->IsInt(); }
 	int FillTree(int i, int j);
 private:
 	list<NodeExpr*> args;
@@ -377,19 +289,7 @@ string UpCase(string s);
 
 class Parser{
 public:
-	Parser(Scanner& sc, ostream& o): scan(sc), os(o){
-		table = new SymTable();
-		FillMaps();
-		scan.Next();
-		isRecord = false;
-		isAccess = false;
-		SymTypeInteger* i = new SymTypeInteger("INTEGER");
-		SymTypeReal* f = new SymTypeReal("REAL");
-		table->insert(Sym("INTEGER", i));
-		table->insert(Sym("REAL", f));
-		curIdent = "";
-		nextScan = true;
-	}
+	Parser(Scanner& sc, ostream& o);
 	void ParseDecl();
 private:
 	NodeExpr* ParseSimple(int prior);

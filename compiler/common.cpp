@@ -1,5 +1,30 @@
 #include "common.h"
 
+
+void SmthExpexted(string tok, int pos, int line, string exp){
+	if (tok != UpCase(exp))
+		throw Error(exp + " expected", pos, line);
+}
+
+void CheckAccess(string s, int i, int j){
+	if (s == "[")
+		throw Error("Invalid array name", i, j);
+	if (s == "(")
+		throw Error("Invalid function name", i, j);
+	if (s== ".")
+		throw Error("Invalid record name", i, j);
+}
+
+bool IsIntOperator(string val) { return (val == "+" || val == "-" || val == "*" || UpCase(val) == "MOD" 
+										|| UpCase(val) == "DIV"); }
+
+bool AnothBlock(string s){
+	if (s == "TYPE" || s == "CONST" || s == "PROCEDURE" || s == "FUNCTION" || s == "BEGIN" || s == "EOF" || s == "VAR")
+		return true;
+	else 
+		return false;
+}
+
 void FillMaps(){
 	priority["NOT"] = 1; 
 	priority["*"] = 2; priority["/"] = 2; priority["DIV"] = 2; priority["MOD"] = 2; 
@@ -22,7 +47,7 @@ void ClearArr(){
 }
 
 void PrintExpr(ostream& os, int h){
-	for (int i = 0; i < h; ++i){
+	for (int i = 0; i < maxN; ++i){
 		for (int j = 0; j < maxLength; ++j)
 			os << arr[i][j];
 		os << "\n";
@@ -36,6 +61,7 @@ int PaintBranch(int i, int j, int k, int h, bool f){
 	if (f)
 		for (unsigned int k = 0; k < 3; ++k)
 			arr[j][i + k + 1] = '_';
+	maxN = max(maxN, j + 1);
 	return j;
 }
 

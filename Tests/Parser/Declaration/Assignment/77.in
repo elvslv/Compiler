@@ -1,0 +1,5 @@
+function func(i: real): integer; forward;
+var r: real;
+begin
+r := func(1 + 5);
+end.

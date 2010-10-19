@@ -171,19 +171,6 @@ public:
 	string GetTypeName(){return "Incorrect Token";}
 };
 
-class Error 
-{
-public:
-	Error(){};
-	Error(string txt, int pos, int line): text(txt), errorPos(pos), errorLine(line){};
-	string GetText() {return text; }
-	int GetErrorPos() {return errorPos; }
-	int GetErrorLine() {return errorLine; }
-protected:
-	string text;
-	int errorPos, errorLine;
-};
-
 class Scanner
 {
 public:

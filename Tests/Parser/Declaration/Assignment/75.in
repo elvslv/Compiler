@@ -1,0 +1,6 @@
+type trec = record x: integer; y: real; end;
+var a: record x: integer; y: trec; end;
+const m = 10;
+begin
+a.y.x := 12 + m;
+end.

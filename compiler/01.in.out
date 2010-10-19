@@ -1,2 +1,17 @@
-const M = 5;
-const T = 10;
+var B : INTEGER;
+type TT = INTEGER;
+var D : TT;
+
+:=            
+|             
+|___B         
+|             
+|___+         
+    |         
+    |___D     
+    |         
+    |___*     
+        |     
+        |___10
+        |     
+        |___D 

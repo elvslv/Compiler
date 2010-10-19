@@ -8,6 +8,7 @@ using namespace std;
 const int arrSize = 500;
 static char arr[arrSize][arrSize];
 static int maxLength = 0;
+static int maxN = 0;
 static map<string, int> priority;
 enum State
 {
@@ -60,6 +61,30 @@ enum TokenType{
 	ttSpecSymb, 
 
 };
+
+class Error 
+{
+public:
+	Error(){};
+	Error(string txt, int pos, int line): text(txt), errorPos(pos), errorLine(line){};
+	string GetText() {return text; }
+	int GetErrorPos() {return errorPos; }
+	int GetErrorLine() {return errorLine; }
+protected:
+	string text;
+	int errorPos, errorLine;
+};
+void CheckAccess(string s, int i, int j);
+bool IsIntOperator(string val);
+template <typename T>
+string toString(T val)
+{
+    std::ostringstream oss;
+    oss << val;
+    return oss.str();
+}
+void SmthExpexted(string tok, int pos, int line, string exp);
+bool AnothBlock(string s);
 int FindOpPrior(string str);
 void FillMaps();
 void ClearArr();

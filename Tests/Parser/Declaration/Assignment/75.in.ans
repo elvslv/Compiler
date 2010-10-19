@@ -1,0 +1,27 @@
+type TREC = record 
+    var X : INTEGER;
+    var Y : REAL;
+end;
+var A : record 
+    var X : INTEGER;
+    var Y : TREC;
+end;
+const M = 10;
+
+:=           
+|            
+|___.        
+|   |        
+|   |___.    
+|   |   |    
+|   |   |___A
+|   |   |    
+|   |   |___Y
+|   |        
+|   |___X    
+|            
+|___+        
+    |        
+    |___12   
+    |        
+    |___M    

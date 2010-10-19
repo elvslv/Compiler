@@ -1,2 +1,6 @@
-const m = 5;
-t = 10;
+var b: integer;
+type tt = integer;
+var d: tt;
+begin
+	b := d + 10 * d;
+end.

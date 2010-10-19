@@ -1,12 +1,5 @@
 #include "ExprParser.h"
 
-template <typename T>
-std::string toString(T val)
-{
-    std::ostringstream oss;
-    oss << val;
-    return oss.str();
-}
 int FillTreeBinOp(int i, int j, string Value, Expr* left, Expr* right){
 	j = FillTreeOp(i, j, Value);
 	int hl = left->FillTree(i + 4, j);

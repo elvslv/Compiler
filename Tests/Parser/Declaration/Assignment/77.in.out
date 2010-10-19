@@ -1,0 +1,20 @@
+function FUNC(var I : REAL;): INTEGER;
+var R : REAL;
+
+:=                   
+|                    
+|___R                
+|                    
+|___ItoR             
+    |                
+    |___()           
+        |            
+        |___FUNC     
+        |            
+        |___ItoR     
+            |        
+            |___+    
+                |    
+                |___1
+                |    
+                |___5
