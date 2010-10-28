@@ -37,9 +37,12 @@ public:
 class KeyWord: public Identifier
 {
 public:
-	KeyWord(int pos, int line, string val) : Identifier(pos, line, val){};
-	TokenType GetType() {return ttKeyWord; }
+	KeyWord(int pos, int line, string val);
+	TokenType GetType() {return type; }
 	string GetTypeName(){return "Key Word";}
+private:
+	TokenType type;
+
 };
 
 class Literal:  public Token 
@@ -57,16 +60,17 @@ public:
 	{
 		num = atoi(val.c_str());
 	}
-	TokenType GetType() {return ttIntLit; }
-	string GetTypeName(){return "Integer Literal";}
-private:
+	virtual TokenType GetType() {return ttIntLit; }
+	virtual string GetTypeName(){return "Integer Literal";}
+	virtual int GetVal() {return num; }
+protected:
 	int num;
 };
 
-class HexLiteral: public Literal
+class HexLiteral: public IntLiteral
 {
 public:
-	HexLiteral(int pos, int line, string val) : Literal(pos, line, val)
+	HexLiteral(int pos, int line, string val) : IntLiteral(pos, line, val)
 	{
 		num = 0;
 		for (unsigned int i = 1; i < val.length(); ++i)
@@ -77,14 +81,12 @@ public:
 	}
 	TokenType GetType() {return ttHexLiteral; }
 	string GetTypeName(){return "Hexadecimal Literal";}
-private:
-	int num;
 };
 
-class BinLiteral: public Literal
+class BinLiteral: public IntLiteral
 {
 public:
-	BinLiteral(int pos, int line, string val) : Literal(pos, line, val)
+	BinLiteral(int pos, int line, string val) : IntLiteral(pos, line, val)
 	{
 		num = 0;
 		for (unsigned int i = 1; i < val.length(); ++i)
@@ -95,14 +97,12 @@ public:
 	}
 	TokenType GetType() {return ttBinLiteral; }
 	string GetTypeName(){return "Binary Literal";}
-private:
-	int num;
 };
 
-class OctLiteral: public Literal
+class OctLiteral: public IntLiteral
 {
 public:
-	OctLiteral(int pos, int line, string val) : Literal(pos, line, val)
+	OctLiteral(int pos, int line, string val) : IntLiteral(pos, line, val)
 	{
 		num = 0;
 		for (unsigned int i = 1; i < val.length(); ++i)
@@ -113,8 +113,6 @@ public:
 	}
 	TokenType GetType() {return ttOctLiteral; }
 	string GetTypeName(){return "Octal Literal";}
-private:
-	int num;
 };
 
 
@@ -127,6 +125,7 @@ public:
 	}
 	TokenType GetType() {return ttRealLit; }
 	string GetTypeName(){return "Real Literal";}
+	double GetVal() {return num; }
 private:
 	double num;
 };
@@ -142,17 +141,21 @@ public:
 class Operation: public Token
 {
 public:
-	Operation(int pos, int line, string val) : Token(pos, line, val){};
-	TokenType GetType() {return ttOperation; }
+	Operation(int pos, int line, string val);
+	TokenType GetType() {return type; }
 	string GetTypeName(){return "Operation";}
+private:
+	TokenType type;
 };
 
 class Separator: public Token
 {
 public:
-	Separator(int pos, int line, string val) : Token(pos, line, val){};
-	TokenType GetType() {return ttSeparator; }
+	Separator(int pos, int line, string val);
+	TokenType GetType() {return type; }
 	string GetTypeName(){return "Separator";}
+private:
+	TokenType type;
 };
 
 class EndOfFile: public Token

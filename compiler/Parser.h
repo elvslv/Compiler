@@ -141,12 +141,34 @@ public:
 
 class SymVarConst: public SymVar{
 public:
-	SymVarConst(string s, string v, SymType* t): SymVar(s, t), val(v){};
+	SymVarConst(string s, SymType* t): SymVar(s, t){};
 	virtual void Print(ostream& os, bool f);
+	virtual void PrintVal(ostream& os) = 0;
 	bool IsConst() {return true; }
-	string GetValue() {return val; }
+	virtual bool IsInt() = 0;
+};
+
+class SymVarConstInt: public SymVarConst{
+public:
+	SymVarConstInt(string s, SymType* t, int v): SymVarConst(s, t), val(v){};
+	int GetValue() {return val; }
+	void PrintVal(ostream& os) {os << val; }
+	bool IsInt() {return true; }
 private:
-	string val;
+	int val;
+};
+
+class SymVarConstReal: public SymVarConst{
+public:
+	SymVarConstReal(string s, SymType* t, double v): SymVarConst(s, t), val(v){};
+	double GetValue() {return val; }
+	void PrintVal(ostream& os) {
+		os.precision(10);
+		os << val; 
+	}
+	bool IsInt() {return false; }
+private:
+	double val;
 };
 
 class SymVarParam: public SymVar{
@@ -308,8 +330,8 @@ private:
 	SymType* ParseType(bool newType);
 	SymVar* ParseVar();
 	void ParseConstBlock();
-	void ParseTypeConstBlock(string b_name);
-	SymTable* ParseVarRecordBlock(string b_name);
+	void ParseTypeConstBlock(TokenType tt);
+	SymTable* ParseVarRecordBlock(TokenType tt);
 	SymVarConst* ParseConst(bool newConst);
 	SymProc* ParseProcedure(bool newProc, bool func);
 	SymTypeArray* ParseArray();

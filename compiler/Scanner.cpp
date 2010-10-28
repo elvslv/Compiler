@@ -3,12 +3,54 @@
 map<string, TokenType> TT;
 const int TabSize = 4;
 
+KeyWord::KeyWord(int pos, int line, string val) : Identifier(pos, line, val){
+	type = TT[UpCase(val)];
+}
+
+Operation::Operation(int pos, int line, string val) : Token(pos, line, val){
+	type = TT[UpCase(val)];
+}
+
+Separator::Separator(int pos, int line, string val) : Token(pos, line, val){
+	type = TT[UpCase(val)];
+}
+
 bool IsKeyWord(string tmp)
 {
 	map<string, TokenType>::iterator it;
 	transform(tmp.begin(), tmp.end(), tmp.begin(), toupper);
 	it = TT.find(tmp);
-	return it != TT.end() && it->second == ttKeyWord;
+	return it != TT.end() && it->second > ttKeyWordB && it->second < ttKeyWordE;
+}
+
+bool IsSeparator(TokenType tt){
+	return tt > ttSeparatorB && tt < ttSeparatorE;
+}
+
+bool IsOperation(TokenType tt){
+	return tt > ttOperationB && tt < ttOperationE;
+}
+
+bool IsKeyWord(TokenType tt){
+	return tt > ttKeyWordB && tt < ttKeyWordE;
+}
+
+bool IsSeparator(char ch){
+	string str;
+	str += ch;
+	return IsSeparator(TT[str]);
+}
+
+bool IsOperation(char ch){
+	string str;
+	str += ch;
+	return IsOperation(TT[str]);
+}
+
+bool IsKeyWord(char ch){
+	string str;
+	str += ch;
+	return IsKeyWord(TT[str]);
 }
 
 bool IsConcreteType(char ch, TokenType type)
@@ -17,30 +59,32 @@ bool IsConcreteType(char ch, TokenType type)
 	string t = "";
 	t += ch;
 	it = TT.find(t);
-	return it != TT.end() && it->second == type;
+	if (it == TT.end())
+		return 0;
+	return it->second == type;
 }
 
 void FillTokenTypes()
 {
-	TT["AND"] = ttKeyWord; TT["ARRAY"] = ttKeyWord; TT["BEGIN"] = ttKeyWord; TT["CASE"] = ttKeyWord;
-	TT["CONST"] = ttKeyWord; TT["DIV"] = ttKeyWord; TT["DO"] = ttKeyWord; TT["DOWNTO"] = ttKeyWord;
-	TT["ELSE"] = ttKeyWord; TT["END"] = ttKeyWord; TT["FOR"] = ttKeyWord; TT["FUNCTION"] = ttKeyWord;
-	TT["FORWARD"] = ttKeyWord; TT["GOTO"] = ttKeyWord; TT["IF"] = ttKeyWord; TT["IN"] = ttKeyWord;
-	TT["MOD"] = ttKeyWord; TT["NIL"] = ttKeyWord; TT["NOT"] = ttKeyWord; TT["OF"] = ttKeyWord;
-	TT["OR"] = ttKeyWord; TT["PROCEDURE"] = ttKeyWord; TT["PROGRAM"] = ttKeyWord; TT["RECORD"] = ttKeyWord;
-	TT["REPEAT"] = ttKeyWord; TT["SET"] = ttKeyWord; TT["SHL"] = ttKeyWord; TT["SHR"] = ttKeyWord;
-	TT["STRING"] = ttKeyWord; TT["THEN"] = ttKeyWord; TT["TO"] = ttKeyWord; TT["TYPE"] = ttKeyWord;
-	TT["UNTIL"] = ttKeyWord; TT["USES"] = ttKeyWord; TT["VAR"] = ttKeyWord; TT["WHILE"] = ttKeyWord;
-	TT["WITH"] = ttKeyWord; TT["XOR"] = ttKeyWord; TT["READLN"] = ttKeyWord; TT["WRITELN"] = ttKeyWord;
-	TT["READ"] = ttKeyWord; TT["WRITE"] = ttKeyWord; TT["INTEGER"] = ttKeyWord; TT["BYTE"] = ttKeyWord;
-	TT["SHORTINT"] = ttKeyWord; TT["WORD"] = ttKeyWord; TT["LONGINT"] = ttKeyWord; TT["INT64"] = ttKeyWord;
-	TT["BOOLEAN"] = ttKeyWord; TT["CHAR"] = ttKeyWord; TT["SINGLE"] = ttKeyWord; TT["REAL"] = ttKeyWord;
-	TT["DOUBLE"] = ttKeyWord; TT["EXTENDED"] = ttKeyWord; TT["COMP"] = ttKeyWord; 
-	TT["."] = ttSeparator; TT[","] = ttSeparator; TT["("] = ttSeparator; TT[")"] = ttSeparator; TT["["] = ttSeparator;
-	TT["]"] = ttSeparator; TT["{"] = ttSeparator; TT["}"] = ttSeparator; TT[";"] = ttSeparator; TT[":"] = ttSeparator;
-	TT["+"] = ttOperation; TT["-"] = ttOperation; TT["/"] = ttOperation; TT["*"] = ttOperation; TT["="] = ttOperation;
-	TT[">"] = ttOperation; TT["<"] = ttOperation; TT["<>"] = ttOperation; TT[":="] = ttOperation; TT[">="] = ttOperation;
-	TT["<="] = ttOperation;  TT["^"] = ttOperation; TT["@"] = ttOperation; TT[".."] = ttSeparator; 
+	TT["AND"] = ttAnd; TT["ARRAY"] = ttArray; TT["BEGIN"] = ttBegin; TT["CASE"] = ttCase;
+	TT["CONST"] = ttConst; TT["DIV"] = ttDiv; TT["DO"] = ttDo; TT["DOWNTO"] = ttDownto;
+	TT["ELSE"] = ttElse; TT["END"] = ttEnd; TT["FOR"] = ttFor; TT["FUNCTION"] = ttFunction;
+	TT["FORWARD"] = ttForward; TT["GOTO"] = ttGoto; TT["IF"] = ttIf; TT["IN"] = ttIn;
+	TT["MOD"] = ttMod; TT["NIL"] = ttNil; TT["NOT"] = ttNot; TT["OF"] = ttOf;
+	TT["OR"] = ttOr; TT["PROCEDURE"] = ttProcedure; TT["PROGRAM"] = ttProgram; TT["RECORD"] = ttRecord;
+	TT["REPEAT"] = ttRepeat; TT["SET"] = ttSet; TT["SHL"] = ttShl; TT["SHR"] = ttShr;
+	TT["STRING"] = ttString; TT["THEN"] = ttThen; TT["TO"] = ttTo; TT["TYPE"] = ttType;
+	TT["UNTIL"] = ttUntil; TT["USES"] = ttUses; TT["VAR"] = ttVar; TT["WHILE"] = ttWhile;
+	TT["WITH"] = ttWith; TT["XOR"] = ttXor; TT["READLN"] = ttReadln; TT["WRITELN"] = ttWriteln;
+	TT["READ"] = ttRead; TT["WRITE"] = ttWrite; TT["INTEGER"] = ttInteger; TT["BYTE"] = ttByte;
+	TT["SHORTINT"] = ttShortint; TT["WORD"] = ttWord; TT["LONGINT"] = ttLongint; TT["INT64"] = ttInt64;
+	TT["BOOLEAN"] = ttBoolean; TT["CHAR"] = ttChar; TT["SINGLE"] = ttSingle; TT["REAL"] = ttReal;
+	TT["DOUBLE"] = ttDouble; TT["EXTENDED"] = ttExtended; TT["COMP"] = ttComp; 
+	TT["."] = ttDot; TT[","] = ttPoint; TT["("] = ttLeftParentheses; TT[")"] = ttRightParentheses; TT["["] = ttLeftBracket;
+	TT["]"] = ttRightBracket; TT["{"] = ttLeftBrace; TT["}"] = ttRightrace; TT[";"] = ttSemi; TT[":"] = ttColon;
+	TT["+"] = ttPlus; TT["-"] = ttMinus; TT["/"] = ttRealDiv; TT["*"] = ttMul; TT["="] = ttEq;
+	TT[">"] = ttMore; TT["<"] = ttLess; TT["<>"] = ttNotEq; TT[":="] = ttAssign; TT[">="] = ttMoreEq;
+	TT["<="] = ttLessEq;  TT["^"] = ttCaret; TT["@"] = ttDog; TT[".."] = ttDblDot; 
 }
 
 void Scanner::GC()
@@ -128,9 +172,6 @@ void Scanner::NewToken(TokenType tt, int p, int l, string val, char ch)
 	case ttIdentifier:
 		curToken = new Identifier(p, l, val);
 		break;
-	case ttKeyWord:
-		curToken = new KeyWord(p, l, val);
-		break;
 	case ttLiteral:
 		curToken = new Literal(p, l, val);
 		break;
@@ -152,18 +193,19 @@ void Scanner::NewToken(TokenType tt, int p, int l, string val, char ch)
 	case ttOctLiteral:
 		curToken = new OctLiteral(p, l, val);
 		break;
-	case ttOperation:
-		curToken = new Operation(p, l, val);
-		break;
-	case ttSeparator:
-		curToken = new Separator(p, l, val);
-		break;
 	case ttEOF:
 		curToken = new EndOfFile(p, l);
 		break;
 	case ttBadToken:
 		curToken = new BadToken(p, l, val);
 		break;
+	default:
+		if (tt > ttKeyWordB && tt < ttKeyWordE)
+			curToken = new KeyWord(p, l, val);
+		if (tt > ttOperationB && tt < ttOperationE)
+			curToken = new Operation(p, l, val);
+		if (tt > ttSeparatorB && tt < ttSeparatorE)
+			curToken = new Separator(p, l, val);
 	}
 	if (ch == -52)
 		ChangePosIndex();
@@ -207,10 +249,7 @@ int Scanner::StateStNewLex()
 				case '&': state = stAmpersand; break;
 				case '.': state = stPoint; break;
 				case'+': case'-': case ',':case ')': case '[': case ']': case '}': case ';': case '*': case '=': case '@': case '^':
-					if (IsConcreteType(curCh, ttSeparator))
-						NewToken(ttSeparator, curPos, curLine, curStr + curCh, -52);
-					else
-						NewToken(ttOperation, curPos, curLine, curStr + curCh, -52);
+					NewToken(TT[string(curStr + curCh)], curPos, curLine, curStr + curCh, -52);
 					return 0;
 				default:
 				{
@@ -230,7 +269,7 @@ int Scanner::StateStDigConsq()
 			state = stRealLitPointLast;    
 		else
 		{
-			if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsWhiteSpace(curCh))
+			if (file.eof() || IsSeparator(curCh) || IsOperation(curCh) || IsWhiteSpace(curCh))
 			{
 				NewToken(ttIntLit, curPos, curLine, curStr, prevch);
 				return 0;
@@ -247,10 +286,10 @@ int Scanner::StateStDigConsq()
 
 int Scanner::StateStIdent()
 {
-	if (file.eof() || IsWhiteSpace(curCh) || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation))
+	if (file.eof() || IsWhiteSpace(curCh) || IsSeparator(curCh) || IsOperation(curCh))
 	{
 		if (IsKeyWord(curStr))
-			NewToken(ttKeyWord, curPos, curLine, curStr, prevch);
+			NewToken(TT[UpCase(curStr)], curPos, curLine, curStr, prevch);
 		else
 			NewToken(ttIdentifier, curPos, curLine, curStr, prevch);
 		return 0;
@@ -270,7 +309,7 @@ int Scanner::StateStRealLitWithoutE()
 		state = stRealELast;
 	else
 	{
-		if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsWhiteSpace(curCh))
+		if (file.eof() || IsSeparator(curCh) || IsOperation(curCh) || IsWhiteSpace(curCh))
 		{
 			NewToken(ttRealLit, curPos, curLine, curStr, prevch);
 			return 0;
@@ -292,7 +331,7 @@ int Scanner::StateStStrLitWithHashDigs()
 	if (curCh == '\'')
 		state = stApostrophe;
 	else
-		if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsWhiteSpace(curCh))
+		if (file.eof() || IsSeparator(curCh) || IsOperation(curCh) || IsWhiteSpace(curCh))
 		{
 			NewToken(ttStringLit, curPos, curLine, Change(curStr), prevch); 
 			return 0;
@@ -361,7 +400,7 @@ int Scanner::StateStDollarPercentAmpersand()
 	case stDollar:
 		i = 2; break;
 	}
-	if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsWhiteSpace(curCh))
+	if (file.eof() || IsSeparator(curCh) || IsOperation(curCh) || IsWhiteSpace(curCh))
 	{
 		if (curStr.length() == 1)
 		{
@@ -413,7 +452,7 @@ void Scanner::Next()
 					state = stCmntSlash;
 				else
 				{
-					NewToken(ttOperation, curPos, curLine, "/", prevch);
+					NewToken(TT["/"], curPos, curLine, "/", prevch);
 					return;
 				}
 				break;
@@ -422,7 +461,7 @@ void Scanner::Next()
 					state = stCmntRndBracket;
 				else
 				{
-					NewToken(ttSeparator, curPos, curLine, "(", '(');
+					NewToken(TT["("], curPos, curLine, "(", '(');
 					return;
 				}
 				break;
@@ -435,21 +474,18 @@ void Scanner::Next()
 				break;
 			case stLess:
 				if (curCh == '=' || curCh == '>')
-					NewToken(ttOperation, curPos, curLine, curStr + curCh, -52);
+					NewToken(TT[string(curStr + curCh)], curPos, curLine, curStr + curCh, -52);
 				else
-					NewToken(ttOperation, curPos, curLine, curStr, prevch);
+					NewToken(TT[curStr], curPos, curLine, curStr, prevch);
 				return;
 			case stMore: case stColon: 
 				if (curCh == '=')
-					NewToken(ttOperation, curPos, curLine, curStr + curCh, -52);
+					NewToken(TT[string(curStr + curCh)], curPos, curLine, curStr + curCh, -52);
 				else
-					if (state == stMore)
-						NewToken(ttOperation, curPos, curLine, curStr, prevch);
-					else 
-						NewToken(ttSeparator, curPos, curLine, curStr, prevch);
+					NewToken(TT[curStr], curPos, curLine, curStr, prevch);
 				return;
 			case stRealLit: 
-				if (file.eof() || IsConcreteType(curCh, ttSeparator) || IsConcreteType(curCh, ttOperation) || IsWhiteSpace(curCh))
+				if (file.eof() || IsSeparator(curCh) || IsOperation(curCh) || IsWhiteSpace(curCh))
 				{
 					NewToken(ttRealLit, curPos, curLine, curStr, prevch);
 					return;
@@ -533,14 +569,14 @@ void Scanner::Next()
 						return;
 				break;
 			case stPointBeforeEOF:
-				NewToken(ttSeparator, curPos, curLine, ".", -52);
+				NewToken(TT["."], curPos, curLine, ".", -52);
 				state = stNewLex;
 				return;
 			case stPoint: 
 				if (curCh != '.' || file.eof())
-					NewToken(ttSeparator, curPos, curLine, curStr, prevch);
+					NewToken(TT[curStr], curPos, curLine, curStr, prevch);
 				else
-					NewToken(ttSeparator, curPos, curLine, curStr + curCh, -52);
+					NewToken(TT[string(curStr + curCh)], curPos, curLine, curStr + curCh, -52);
 				return;
 			}
 		curStr = curStr + curCh;
