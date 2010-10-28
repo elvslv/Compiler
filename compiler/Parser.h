@@ -1,211 +1,76 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
-#include <string>
-#include <map>
-#include <list>
-#include "ExprParser.h"
+#include "Symbols.h"
 using namespace std;
 
-class SymType;
+class NodeExpr;
 
-class Symbol{
+class SyntaxNode{};
+
+class Statement: public SyntaxNode{};
+
+class StmtAssign: public Statement{
 public:
-	Symbol(){name = "";}
-	Symbol(string s): name(s) {};
-	virtual bool IsType() {return false;}
-	virtual bool IsConst() {return false; }
-	virtual bool IsVar() {return false;}
-	virtual bool IsProc() {return false;}
-	virtual bool IsFunc() {return false;}
-	virtual string GetName() {return name; }
-	virtual void SetName(string s) {name = s;}
-	virtual void Print(ostream& os, bool f){};
-	virtual SymType* GetType() {return NULL; }
-protected:
-	string name;
-};
-
-typedef pair<string, Symbol*> Sym;
-typedef map <string, Symbol*> SymTable;
-
-class SymType: public Symbol{
-public:
-	SymType(string s): Symbol(s) {};
-	virtual bool IsType() {return true;}
-	virtual bool IsArray() {return false;}
-	virtual bool IsRecord() {return false;}
-	virtual void Print(ostream& os, bool f) { os << name; }
-	virtual bool IsInt() {return false;}
-	virtual bool IsReal() {return false;}
-	virtual bool IsScalar() {return false;}
-	virtual bool IsAlias() {return false; }
-};
-
-class SymVar: public Symbol{
-public:
-	SymVar(string s, SymType* t): Symbol(s), type(t){};
-	virtual bool IsVar() {return true;}
-	virtual bool IsParamByRef() {return false; }
-	virtual SymType* GetType() {return type; }
-	virtual void Print(ostream& os, bool f);
-protected:
-	SymType* type;
-};
-
-class SymProc: public Symbol{
-public:
-	SymProc(string s, SymTable* ar, SymTable* loc, list<string>* names): Symbol(s), args(ar), locals(loc), argNames(names) {};
-	virtual bool IsProc() {return true;}
-	void Print(ostream& os, bool f);
-	SymTable* GetArgsTable() {return args;}
-	list<string>* GetArgNames() {return argNames;}
-protected:
-	SymTable* args;
-	SymTable* locals; 
-	list<string>* argNames;
-};
-
-class SymFunc: public SymProc{
-public:
-	bool IsProc() {return false;}
-	bool IsFunc() {return true;}
-	SymFunc(string s, SymTable* ar, SymTable* loc, list<string>* names, SymType* t): SymProc(s, ar, loc, names), type(t) {};
-	void Print(ostream& os, bool f);
-	SymTable* GetArgsTable() {return args;}
-	list<string>* GetArgNames() {return argNames;}
-	SymType* GetType() {return type; }
+	StmtAssign(NodeExpr* l, NodeExpr* r): left(l), right(r){};
 private:
-	SymType* type;
+	NodeExpr* left;
+	NodeExpr* right;
 };
 
-class SymTypeScalar: public SymType{
+class StmtProcedure: public Statement{
 public:
-	SymTypeScalar(string s): SymType(s){};
-	virtual bool IsScalar() {return true;}
-};
-
-class SymTypeReal: public SymTypeScalar{
-public:
-	SymTypeReal(string s): SymTypeScalar(s){};
-	bool IsReal() {return true;}
-};
-
-class SymTypeInteger: public SymTypeScalar{
-public:
-	SymTypeInteger(string s): SymTypeScalar(s){};
-	bool IsInt() {return true; }
-};
-
-class SymTypeRecord: public SymType{
-public:
-	SymTypeRecord(string s, SymTable* f): SymType(s), fields(f) {};
-	bool IsRecord() {return true;}
-	void Print(ostream& os, bool f);
-	SymTable* GetFileds() {return fields; }
+	StmtProcedure(SymProc* pr): proc(pr){};
 private:
-	SymTable* fields;
+	SymProc* proc;
 };
 
-class SymTypeAlias: public SymType{
+class StmtBlock: public Statement{
 public:
-	SymTypeAlias(string s, SymType* rt): SymType(s), refType(rt){};
-	void Print(ostream& os, bool f);
-	bool IsInt() {return refType->IsInt(); }
-	bool IsReal() {return refType->IsReal();}
-	bool IsScalar() {return refType->IsScalar();}
-	bool IsAlias() {return true; }
-	SymType* GetRefType() {return refType; }
+	StmtBlock(list<Statement*> stmts): statements(stmts){};
 private:
-	SymType* refType;
+	list<Statement*> statements;
 };
 
-class SymTypePointer: public SymType{
+class StmtIf: public Statement{
 public:
-	SymTypePointer(string s, SymType* rt): SymType(s), refType(rt){};
-	void Print(ostream& os, bool f);
-	bool IsInt() {return false; }
+	StmtIf(NodeExpr* exp, Statement* frst, Statement* scnd): expr(exp), first(frst), second(scnd){};
+	StmtIf(NodeExpr* exp, Statement* frst): expr(exp), first(frst), second(NULL){};
 private:
-	SymType* refType;
+	NodeExpr* expr;
+	Statement* first;
+	Statement* second;
 };
 
-class SymVarLocal: public SymVar{
+class StmtWhile: public Statement{
 public:
-	SymVarLocal(string s, SymType* t): SymVar(s, t){};
-};
-
-class SymVarGlobal: public SymVar{
-public:
-	SymVarGlobal(string s, SymType* t): SymVar(s, t){};
-};
-
-class SymVarConst: public SymVar{
-public:
-	SymVarConst(string s, SymType* t): SymVar(s, t){};
-	virtual void Print(ostream& os, bool f);
-	virtual void PrintVal(ostream& os) = 0;
-	bool IsConst() {return true; }
-	virtual bool IsInt() = 0;
-};
-
-class SymVarConstInt: public SymVarConst{
-public:
-	SymVarConstInt(string s, SymType* t, int v): SymVarConst(s, t), val(v){};
-	int GetValue() {return val; }
-	void PrintVal(ostream& os) {os << val; }
-	bool IsInt() {return true; }
+	StmtWhile(NodeExpr* exp, Statement* b): expr(exp), body(b){};
 private:
-	int val;
+	NodeExpr* expr;
+	Statement* body;
 };
 
-class SymVarConstReal: public SymVarConst{
+class StmtRepeat: public Statement{
 public:
-	SymVarConstReal(string s, SymType* t, double v): SymVarConst(s, t), val(v){};
-	double GetValue() {return val; }
-	void PrintVal(ostream& os) {
-		os.precision(10);
-		os << val; 
-	}
-	bool IsInt() {return false; }
+	StmtRepeat(NodeExpr* exp, Statement* b): expr(exp), body(b){};
 private:
-	double val;
+	NodeExpr* expr;
+	Statement* body;
 };
 
-class SymVarParam: public SymVar{
+class StmtFor: public Statement{
 public:
-	SymVarParam(string s, SymType* t): SymVar(s, t){};
-};
-
-class SymVarParamByValue: public SymVarParam{
-public:
-	SymVarParamByValue(string s, SymType* t): SymVarParam(s, t){};
-};
-
-class SymVarParamByRef: public SymVarParam{
-public:
-	SymVarParamByRef(string s, SymType* t): SymVarParam(s, t){};
-	void Print(ostream& os, bool f);
-	virtual bool IsParamByRef() {return true; }
-};
-
-class SymTypeArray: public SymType{
-public:
-	SymTypeArray(string s, SymType* type, SymVarConst* b, SymVarConst* t): SymType(s), elemType(type), bottom(b), top(t) {};
-	bool IsArray() {return true;}
-	void Print(ostream& os, bool f);
-	SymType* GetElemType() {return elemType; }
-	SymVarConst* GetBottom() {return bottom; }
-	SymVarConst* GetTop() {return top; }
+	StmtFor(SymVar* v, NodeExpr* init, NodeExpr* finit, bool t): var(v), initVal(init), finitVal(finit), to(t){};
 private:
-	SymType* elemType;
-	SymVarConst* bottom; SymVarConst* top;
+	SymVar* var;
+	NodeExpr* initVal;
+	NodeExpr* finitVal;
+	bool to;
 };
 
-class SyntaxNode{
-};
+class StmtBreak: public Statement{};
 
-class NodeStatement: public SyntaxNode{
-};
+class StmtContinue: public Statement{};
 
 class NodeExpr: public SyntaxNode{
 public:
@@ -325,7 +190,7 @@ private:
 	ArrayAccess* ParseArr(NodeExpr* res, SymVar** var, int pos, int line);
 	RecordAccess* ParseRecord(NodeExpr* res, SymVar** var, int pos, int line);
 	FunctionCall* ParseFunc(NodeExpr* res, SymVar** var, int pos, int line);
-	void ParseAssignment();
+	Statement* ParseStatement();
 	void ParseTypeBlock();
 	SymType* ParseType(bool newType);
 	SymVar* ParseVar();
@@ -343,9 +208,19 @@ private:
 	int TokLine() {return scan.GetToken()->GetLine();}
 	string CheckCurTok(string blockName, SymTable* tbl);
 	void CheckProcDecl();
+	StmtWhile* ParseWhile();
+	StmtAssign* ParseAssignment();
+	StmtProcedure* ParseProcedure();
+	StmtBlock* ParseBlock(bool main);
+	StmtIf* ParseIf();
+	StmtRepeat* ParseRepeat();
+	StmtFor* ParseFor();
 	Scanner& scan;
 	ostream& os;
-	SymTable* table;
+	SymTable* table() {
+		return st->top();
+	}
+	SymTableStack* st;
 	string curIdent;
 	bool isRecord;
 	bool isAccess;

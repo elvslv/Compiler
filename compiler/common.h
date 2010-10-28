@@ -49,8 +49,10 @@ enum TokenType{
 	ttAnd, //KeyWord
 	ttArray,
 	ttBegin,
+	ttBreak,
 	ttCase,
 	ttConst,
+	ttContinue,
 	ttDiv,
 	ttDo,
 	ttDownto,
@@ -172,6 +174,7 @@ int PaintBranch(int i, int j, int k, int h, bool f);
 int FillTreeIdentConst(int i, int j, string val);
 int FillTreeOp(int i, int j, string val);
 bool IsKeyWord(string tmp);
+bool IsKeyWord(TokenType tt);
 bool IsAlpha(char ch);
 bool IsDigit(char ch);
 bool IsWhiteSpace(char ch);

@@ -31,10 +31,6 @@ bool IsOperation(TokenType tt){
 	return tt > ttOperationB && tt < ttOperationE;
 }
 
-bool IsKeyWord(TokenType tt){
-	return tt > ttKeyWordB && tt < ttKeyWordE;
-}
-
 bool IsSeparator(char ch){
 	string str;
 	str += ch;
@@ -66,8 +62,8 @@ bool IsConcreteType(char ch, TokenType type)
 
 void FillTokenTypes()
 {
-	TT["AND"] = ttAnd; TT["ARRAY"] = ttArray; TT["BEGIN"] = ttBegin; TT["CASE"] = ttCase;
-	TT["CONST"] = ttConst; TT["DIV"] = ttDiv; TT["DO"] = ttDo; TT["DOWNTO"] = ttDownto;
+	TT["AND"] = ttAnd; TT["ARRAY"] = ttArray; TT["BEGIN"] = ttBegin; TT["BREAK"] = ttBreak; TT["CONTINUE"] = ttContinue;
+	TT["CASE"] = ttCase; TT["CONST"] = ttConst; TT["DIV"] = ttDiv; TT["DO"] = ttDo; TT["DOWNTO"] = ttDownto;
 	TT["ELSE"] = ttElse; TT["END"] = ttEnd; TT["FOR"] = ttFor; TT["FUNCTION"] = ttFunction;
 	TT["FORWARD"] = ttForward; TT["GOTO"] = ttGoto; TT["IF"] = ttIf; TT["IN"] = ttIn;
 	TT["MOD"] = ttMod; TT["NIL"] = ttNil; TT["NOT"] = ttNot; TT["OF"] = ttOf;

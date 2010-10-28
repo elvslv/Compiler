@@ -112,3 +112,7 @@ string UpCase(string s){
 	transform(s.begin(), s.end(), s.begin(), toupper);
 	return s;
 }
+
+bool IsKeyWord(TokenType tt){
+	return tt > ttKeyWordB && tt < ttKeyWordE;
+}

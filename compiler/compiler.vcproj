@@ -190,6 +190,10 @@
 				RelativePath=".\Scanner.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\Symbols.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -210,6 +214,10 @@
 			</File>
 			<File
 				RelativePath=".\Scanner.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Symbols.h"
 				>
 			</File>
 		</Filter>
