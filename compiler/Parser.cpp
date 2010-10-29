@@ -116,8 +116,6 @@ StmtBlock* Parser::ParseBlock(bool main){
 	else
 		stmts.push_back(ParseStatement());
 	res = new StmtBlock(stmts);
-	scan.Next();
-	SmthExpexted(TokVal(), TokPos(), TokLine(), main && f ? "." : ";");
 	return res;
 }
 
@@ -127,6 +125,8 @@ StmtWhile* Parser::ParseWhile(){
 	if (TokType() != ttDo)
 		throw Error("Do expected, but " + TokVal() + " found", TokPos(), TokLine());
 	body = ParseBlock(false);
+	scan.Next();
+	SmthExpexted(TokVal(), TokPos(), TokLine(), main && f ? "." : ";");
 	return new StmtWhile(expr, body);
 }
 StmtRepeat* Parser::ParseRepeat(){
@@ -147,11 +147,32 @@ StmtProcedure* Parser::ParseProcedure(){
 	return NULL;
 }
 StmtIf* Parser::ParseIf(){
-	return NULL;
+	NodeExpr* expr = ParseNext();
+	if (TokType() != ttThen)
+		throw Error("Then expected, but " + TokVal() + " found", TokPos(), TokLine());
+	scan.Next();
+	Statement* first = ParseBlock();
+	Statement* second = NULL;
+	scan.Next();
+	if (TokType() == ttElse){
+		scan.Next();
+		second = ParseBlock();
+		scan.Next();
+	}
+	if (TokType() != ttSemi)
+		throw Error("; expected, but " + TokVal() + " found", TokPos(), TokLine());
+	return new StmtIf(expr, first, second);
 }
 
 StmtFor* Parser::ParseFor(){
-	return NULL;
+	scan.Next();
+	if (TokType() != ttIdentifier)
+		throw Error("Identifier expected", TokPos(), TokLine());
+	SymTable::iterator it = FindS(TokVal(), table());
+	if (it == table()->end())
+		throw Error("Unknown identifier", TokPos(), TokLine());
+	if (!it->second->IsVar)
+		throw Error("Variable identifier expected", TokPos(), TokLine());
 }
 
 string Parser::CheckCurTok(string blockName, SymTable* tbl){
