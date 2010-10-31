@@ -8,6 +8,7 @@
 #include "ExprParser.h"
 using namespace std;
 
+class Statement;
 class SymType;
 
 class Symbol{
@@ -26,10 +27,6 @@ public:
 protected:
 	string name;
 };
-
-typedef pair<string, Symbol*> Sym;
-typedef map <string, Symbol*> SymTable;
-typedef stack<SymTable*> SymTableStack;
 
 class SymType: public Symbol{
 public:
@@ -57,7 +54,7 @@ protected:
 
 class SymProc: public Symbol{
 public:
-	SymProc(string s, SymTable* ar, SymTable* loc, list<string>* names): Symbol(s), args(ar), locals(loc), argNames(names) {};
+	SymProc(string s, SymTable* ar, SymTable* loc, list<string>* names, Statement* b): Symbol(s), args(ar), locals(loc), argNames(names), body(b) {};
 	virtual bool IsProc() {return true;}
 	void Print(ostream& os, bool f);
 	SymTable* GetArgsTable() {return args;}
@@ -66,13 +63,14 @@ protected:
 	SymTable* args;
 	SymTable* locals; 
 	list<string>* argNames;
+	Statement* body;
 };
 
 class SymFunc: public SymProc{
 public:
 	bool IsProc() {return false;}
 	bool IsFunc() {return true;}
-	SymFunc(string s, SymTable* ar, SymTable* loc, list<string>* names, SymType* t): SymProc(s, ar, loc, names), type(t) {};
+	SymFunc(string s, SymTable* ar, SymTable* loc, list<string>* names, Statement* b, SymType* t): SymProc(s, ar, loc, names, b), type(t) {};
 	void Print(ostream& os, bool f);
 	SymTable* GetArgsTable() {return args;}
 	list<string>* GetArgNames() {return argNames;}
@@ -156,6 +154,7 @@ public:
 	int GetValue() {return val; }
 	void PrintVal(ostream& os) {os << val; }
 	bool IsInt() {return true; }
+	bool IsReal() {return false; }
 private:
 	int val;
 };
@@ -169,6 +168,7 @@ public:
 		os << val; 
 	}
 	bool IsInt() {return false; }
+	bool IsReal() {return true; }
 private:
 	double val;
 };

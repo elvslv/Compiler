@@ -5,30 +5,6 @@ void SymVar::Print(ostream& os, bool f) {
 	os << ";";
 }
 
-void PrintArgs(ostream& os, SymTable* args){
-	if (!args->empty()){	
-		os << "(";  
-		int i = 0;
-		for (SymTable::iterator it = args->begin(); it != args->end(); ++it)
-			(*it->second).Print(os, false);
-		os << ")";
-	}
-}
-
-void SymProc::Print(ostream& os, bool f) { 
-	os << "procedure "<< name;
-	PrintArgs(os, args);
-	os << ";";
-}
-
-void SymFunc::Print(ostream& os, bool f) { 
-	os << "function " << name;
-	PrintArgs(os, args);
-	os << ": ";
-	type->Print(os, false);
-	os << ";";
-}
-
 void SymTypeRecord::Print(ostream& os, bool f) {
 	if (!f)
 		os << name;

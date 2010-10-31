@@ -17,6 +17,7 @@ void CheckAccess(string s, int i, int j){
 
 bool IsIntOperator(string val) { return (val == "+" || val == "-" || val == "*" || UpCase(val) == "MOD" 
 										|| UpCase(val) == "DIV"); }
+bool IsLogicOperator(string val) {return val == "<" || val == ">" || val == "<=" || val == ">=" || val == "=" || val == "<>"; }
 
 bool AnothBlock(string s){
 	if (s == "TYPE" || s == "CONST" || s == "PROCEDURE" || s == "FUNCTION" || s == "BEGIN" || s == "EOF" || s == "VAR")
@@ -71,6 +72,7 @@ int FillTreeIdentConst(int i, int j, string val){
 		arr[j][i + k] = val[k];
 	if (i + k > maxLength)
 		maxLength = i + k;
+	maxN = max(maxN, j + 1);
 	return 2;
 }
 

@@ -3,6 +3,7 @@
 #include <sstream>
 #include <map>
 #include <string>
+#include <list>
 #include <algorithm>
 using namespace std;
 const int arrSize = 500;
@@ -10,6 +11,11 @@ static char arr[arrSize][arrSize];
 static int maxLength = 0;
 static int maxN = 0;
 static map<string, int> priority;
+class Symbol;
+typedef pair<string, Symbol*> Sym;
+typedef map <string, Symbol*> SymTable;
+typedef list<SymTable*> SymTableStack;
+typedef SymTableStack::iterator SymStIt;
 enum State
 {
 	stNewLex,
@@ -157,6 +163,7 @@ protected:
 };
 void CheckAccess(string s, int i, int j);
 bool IsIntOperator(string val);
+bool IsLogicOperator(string val);
 template <typename T>
 string toString(T val)
 {

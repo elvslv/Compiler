@@ -1,19 +1,41 @@
-var a: integer;
-b: real;
-c: array[1..10] of integer;
-d: array[1..9, 10..19] of real;
-const m = 10;
-t = 12;
-pi = 3.141592653;
-eps = 1.0e-10;
-f = m;
-type int = integer;
-t1 = record
-a: integer;
-b: int;
-end;
-t2 = array[1..20, 10..15] of real;
-function trrr: integer; forward;
-function trrrr(var a: integer; b: real): real; forward;
-procedure proc; forward;
-procedure proc1(i: integer; var m, f: real); forward;
+type tarr = array[1..10] of integer;
+function func: tarr; forward;
+var i, j, k, m: integer;
+begin
+	repeat 
+		i := 7;
+		if (k > 6) then
+			break
+		else
+			continue;
+	until i = 7;
+	if i < 7 then
+		i := 10;
+	if i > 10 then
+	begin
+		j := 10;
+		k := 8;
+	end
+	else
+		m := 15;
+	i := func[5];
+	i := j;
+	j := i; 
+	begin
+		i := i;
+	end;
+	while i > j do
+		i := j;
+	while (i > 5) do
+	begin
+		i := 5 + 6;
+		j := func[7];
+	end;
+	for i := 1 to j do
+		k := m;
+	for j := i + 5 to k - 8 do
+	begin
+		m := 6;
+		i := m + 7 div 2;
+	end;
+end.

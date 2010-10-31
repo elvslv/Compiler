@@ -1,8 +1,69 @@
 #include "Parser.h"
+#include "Symbols.h"
 static int id = 0;
+void PrintArgs(ostream& os, SymTable* args){
+	if (!args->empty()){	
+		os << "(";  
+		int i = 0;
+		for (SymTable::iterator it = args->begin(); it != args->end(); ++it)
+			(*it->second).Print(os, false);
+		os << ")";
+	}
+}
+void SymProc::Print(ostream& os, bool f) { 
+	os << "procedure "<< name;
+	PrintArgs(os, args);
+	os << ";";
+	if (body){
+		os << "\n";
+		body->Print(os, 0);
+	}
+}
+void SymFunc::Print(ostream& os, bool f) { 
+	os << "function " << name;
+	PrintArgs(os, args);
+	os << ": ";
+	type->Print(os, false);
+	os << ";";
+	if (body){
+		os << "\n";
+		body->Print(os, 0);
+	}
+}
+string NodeExpr::GetValue() { return symbol->GetName(); }
+bool Variable::IsInt() { return symbol->GetType()->IsInt(); }
+bool Variable::IsReal() { return symbol->GetType()->IsReal(); }
+bool Const::IsInt() {return symbol->GetType()->IsInt(); }
+bool Const::IsReal() {return symbol->GetType()->IsReal(); }
+bool BinaryOp::IsInt() {return right->IsInt() && left->IsInt() && IsIntOperator(GetValue()) || 
+						 ((SymType*)right->GetType())->IsScalar() && ((SymType*)right->GetType())->IsScalar() && IsLogicOperator(GetValue()); }
+bool ArrayAccess::IsInt() { return ((SymType*)GetType())->IsInt(); }
+bool ArrayAccess::IsReal() { return ((SymType*)GetType())->IsReal(); }
+bool RecordAccess::IsInt() { return ((SymType*)GetType())->IsInt(); }
+bool RecordAccess::IsReal() { return ((SymType*)GetType())->IsReal(); }
+bool FunctionCall::IsInt() {return ((SymType*)GetType())->IsInt(); }
+bool FunctionCall::IsReal() { return ((SymType*)GetType())->IsReal(); }
+bool UnaryOp::IsInt() {return child->IsInt() && IsIntOperator(GetValue()); }
+bool UnaryOp::IsReal() { return child->IsReal(); }
+bool EqTypes(SymType* t1, SymType* t2){
+	while(t1->IsAlias())
+		t1 = ((SymTypeAlias*)t1)->GetRefType();
+	while (t2->IsAlias())
+		t2 = ((SymTypeAlias*)t2)->GetRefType();
+	return t1 == t2;
+}
+
+bool IToR(SymType* t1, SymType* t2){
+	while(t1->IsAlias())
+		t1 = ((SymTypeAlias*)t1)->GetRefType();
+	while (t2->IsAlias())
+		t2 = ((SymTypeAlias*)t2)->GetRefType();
+	return t1->GetName() == "REAL" && t2->GetName() == "INTEGER";
+}
+
 Parser::Parser(Scanner& sc, ostream& o): scan(sc), os(o){
 		SymTable* table = new SymTable();
-		st = new SymTableStack(); 
+		tableStack = new SymTableStack(); 
 		FillMaps();
 		scan.Next();
 		isRecord = false;
@@ -11,9 +72,10 @@ Parser::Parser(Scanner& sc, ostream& o): scan(sc), os(o){
 		SymTypeReal* f = new SymTypeReal("REAL");
 		table->insert(Sym("INTEGER", i));
 		table->insert(Sym("REAL", f));
-		st->push(table);
+		tableStack->push_back(table);
 		curIdent = "";
 		nextScan = true;
+		idFound = true;
 	}
 
 void CheckIsInt(NodeExpr* expr, int i, int j){
@@ -26,82 +88,104 @@ void Parser::CheckEof(){
 	if (TokType() == ttEOF)
 		throw Error("Unexpected end of file", TokPos(), TokLine());
 }
-void Parser::ParseDecl(){
+void Parser::ParseDecl(SymStIt curTable){
 	TokenType tt = TokType();
 	while (tt == ttType || tt == ttVar || tt == ttConst || tt == ttProcedure || tt == ttFunction){
 		scan.Next();
 		switch(tt){
 		case ttType:
-			ParseTypeConstBlock(ttType);
+			ParseTypeConstBlock(curTable, ttType);
 			break;
 		case ttVar:
-			ParseVarRecordBlock(ttVar);
+			ParseVarRecordBlock(curTable, ttVar);
 			break;
 		case ttConst:
-			ParseTypeConstBlock(ttConst);
+			ParseTypeConstBlock(curTable, ttConst);
 			break;
 		case ttProcedure:
-			ParseProcedure(true, false);
+			ParseProcedure(curTable, true, false);
 			break;
 		case ttFunction:
-			ParseProcedure(true, true);
+			ParseProcedure(curTable, true, true);
 		}
 		tt = TokType();
 	}
 }
 
-SymTable::iterator FindS(string s, SymTable* tbl){
-	transform(s.begin(), s.end(), s.begin(), toupper);
-	SymTable::iterator it = tbl->find(s);
+SymTable::iterator Parser::FindS(string s, SymStIt curTable, SymStIt end){
+	SymStIt curIt = curTable;
+	SymTable::iterator it;
+	idFound = true;
+	bool f = false;
+	do {
+		it = (**curIt).find(UpCase(s));
+		if (it != (*curIt)->end()){
+			f = true;
+			break;
+		}
+		else{
+			if (curIt != end)
+				--curIt;
+		}
+	} while (curIt != end);
+	if (!f)
+		idFound = false;
 	return it;
 }
 
-Statement* Parser::ParseStatement(){
+SymTable::iterator Parser::FindS(string s, SymTable* curTable){
+	SymTable::iterator it = curTable->find(UpCase(s));
+	return it;
+}
+
+Statement* Parser::ParseStatement(SymStIt curTable){
 	Statement* res = NULL;
 	if (TokType() != ttIdentifier && !IsKeyWord(TokType()))
 		throw Error("Unexpected lexem found", TokPos(), TokLine());
 	if (IsKeyWord(TokType())){
 		switch(TokType()){
 			case ttIf:
-				res = ParseIf();
+				res = ParseIf(curTable);
 				break;
 			case ttWhile:
-				res = ParseWhile();
+				res = ParseWhile(curTable);
 				break;
 			case ttRepeat:
-				res = ParseRepeat();
+				res = ParseRepeat(curTable);
 				break;
 			case ttFor:
-				res = ParseFor();
+				res = ParseFor(curTable);
 				break;
 			case ttBreak:
 				res = new StmtBreak();
+				scan.Next();
 				break;
 			case ttContinue:
 				res = new StmtContinue();
+				scan.Next();
 				break;
 			case ttBegin:
-				res = ParseBlock(false);
+				res = ParseBlock(curTable, false);
 				break;
 			default:
-				throw Error("Unexpected keyword found", TokPos(), TokLine());
+				throw Error("Unexpected keyword found", TokPos(), TokLine());				
 		}
 	} 
 	else{
-		SymTable::iterator it = FindS(TokVal(), table());
-		if (it == table()->end())
+		SymTable::iterator it = FindS(TokVal(), curTable, tableStack->begin());
+		if (!&it)
 			throw Error("Unknown identifier", TokPos(), TokLine());
 		if (it->second->IsProc() || it->second->IsFunc())
-			res = ParseProcedure();
+			res = ParseProcedure(curTable);
 		else if (it->second->IsVar())
-				res = ParseAssignment();
+				res = ParseAssignment(curTable);
 		else
 			throw Error("Invalid lexem", TokPos(), TokLine());
 	}
 	return res;
 }
 
-StmtBlock* Parser::ParseBlock(bool main){
+StmtBlock* Parser::ParseBlock(SymStIt curTable, bool main){
 	list<Statement*> stmts;
 	StmtBlock* res = NULL;
 	bool f = false;
@@ -109,84 +193,124 @@ StmtBlock* Parser::ParseBlock(bool main){
 		f = true;
 		scan.Next();
 		while (TokType() != ttEnd){
-			stmts.push_back(ParseStatement());
-			scan.Next();
+			stmts.push_back(ParseStatement(curTable));
+			if (TokType() != ttSemi){
+				if (TokType() != ttEnd)
+					throw Error("; expected, but " + TokVal() + " found", TokPos(), TokLine());
+				break;
+			}
+			else
+				scan.Next();
 		}
+		scan.Next();
 	}
 	else
-		stmts.push_back(ParseStatement());
+		stmts.push_back(ParseStatement(curTable));
 	res = new StmtBlock(stmts);
 	return res;
 }
 
-StmtWhile* Parser::ParseWhile(){
-	NodeExpr* expr = ParseNext();
+StmtWhile* Parser::ParseWhile(SymStIt curTable){
+	NodeExpr* expr = ParseNext(curTable);
+	if (!expr->IsInt())
+		throw Error("Condition must be integer", TokPos(), TokLine());
 	Statement* body = NULL;
 	if (TokType() != ttDo)
 		throw Error("Do expected, but " + TokVal() + " found", TokPos(), TokLine());
-	body = ParseBlock(false);
 	scan.Next();
-	SmthExpexted(TokVal(), TokPos(), TokLine(), main && f ? "." : ";");
+	body = ParseBlock(curTable, false);
 	return new StmtWhile(expr, body);
 }
-StmtRepeat* Parser::ParseRepeat(){
+
+StmtRepeat* Parser::ParseRepeat(SymStIt curTable){
 	list<Statement*> stmts;
-	Statement* body = NULL;
+	StmtBlock* body = NULL;
 	scan.Next();
 	while (TokType() != ttUntil){
-		stmts.push_back(ParseStatement());
+		stmts.push_back(ParseStatement(curTable));
 		scan.Next();
 	}
 	body = new StmtBlock(stmts);
-	NodeExpr* expr = ParseNext();
-	if (TokType() != ttSemi)
-		throw Error("; expected, but " + TokVal() + " found", TokPos(), TokLine());
+	NodeExpr* expr = ParseNext(curTable);
+	if (!expr->IsInt())
+		throw Error("Condition must be integer", TokPos(), TokLine());
 	return new StmtRepeat(expr, body);
 }
-StmtProcedure* Parser::ParseProcedure(){
-	return NULL;
+
+StmtProcedure* Parser::ParseProcedure(SymStIt curTable){
+	NodeExpr* expr =  ParseSimple(curTable, 5);
+	if (!expr->IsFunction()){
+		if (expr->IsBinaryOp() && expr->GetSymbol()->GetName() == ":=")
+			throw Error("Left part of assignment must be lvalue", expr->GetPos(), expr->GetLine());
+		throw Error("Invalid expression", TokPos(), TokLine());
+	}
+	SymProc* proc = (SymProc*)expr->GetSymbol();
+	return new StmtProcedure(proc, ((FunctionCall*)expr)->GetArgs());
 }
-StmtIf* Parser::ParseIf(){
-	NodeExpr* expr = ParseNext();
+
+StmtIf* Parser::ParseIf(SymStIt curTable){
+	NodeExpr* expr = ParseNext(curTable);
+	if (!expr->IsInt())
+		throw Error("Condition must be integer", TokPos(), TokLine());
 	if (TokType() != ttThen)
 		throw Error("Then expected, but " + TokVal() + " found", TokPos(), TokLine());
 	scan.Next();
-	Statement* first = ParseBlock();
+	Statement* first = ParseBlock(curTable, false);
 	Statement* second = NULL;
-	scan.Next();
 	if (TokType() == ttElse){
 		scan.Next();
-		second = ParseBlock();
-		scan.Next();
+		second = ParseBlock(curTable, false);
 	}
-	if (TokType() != ttSemi)
-		throw Error("; expected, but " + TokVal() + " found", TokPos(), TokLine());
 	return new StmtIf(expr, first, second);
 }
 
-StmtFor* Parser::ParseFor(){
+StmtFor* Parser::ParseFor(SymStIt curTable){
+	bool to = true;
 	scan.Next();
 	if (TokType() != ttIdentifier)
 		throw Error("Identifier expected", TokPos(), TokLine());
-	SymTable::iterator it = FindS(TokVal(), table());
-	if (it == table()->end())
+	SymTable::iterator it = FindS(TokVal(), curTable, tableStack->begin());
+	if (!idFound)
 		throw Error("Unknown identifier", TokPos(), TokLine());
-	if (!it->second->IsVar)
+	idFound = true;
+	if (!it->second->IsVar())
 		throw Error("Variable identifier expected", TokPos(), TokLine());
+	if (!it->second->GetType()->IsInt())
+		throw Error("Loop variable must be integer", TokPos(), TokLine());
+	scan.Next();
+	if (TokType() != ttAssign)
+		throw Error("Invalid identifier initialization", TokPos(), TokLine());
+	NodeExpr* init = ParseNext(curTable);
+	if (!init->IsInt())
+		throw Error("Init expression must be integer", TokPos(), TokLine());
+	if (TokType() == ttDownto)
+		to = false;
+	else
+		if (TokType() != ttTo)
+			throw Error("To expected, but " + TokVal() + " found", TokPos(), TokLine());
+	NodeExpr* finit = ParseNext(curTable);
+	if (!finit->IsInt())
+		throw Error("Final expression must be integer", TokPos(), TokLine());
+	if (TokType() != ttDo)
+		throw Error("Do expected, but " + TokVal() + " found", TokPos(), TokLine());
+	scan.Next();
+	StmtBlock* body = ParseBlock(curTable, false);
+	return new StmtFor((SymVar*)it->second, init, finit, body, to);
 }
 
-string Parser::CheckCurTok(string blockName, SymTable* tbl){
+string Parser::CheckCurTok(SymStIt curTable, string blockName, SymTable* tbl){
 	if (TokType() != ttIdentifier)
 		throw Error("Invalid lexem in " + blockName + " block", TokPos(), TokLine());
 	string s = TokVal();
-	SymTable::iterator it = FindS(s, tbl);
+	SymTable::iterator it = FindS(TokVal(), tbl);
 	if (it != tbl->end())
-		throw Error("Identifier already declared", TokPos(), TokLine());	
+		throw Error("Identifier already declared", TokPos(), TokLine());
+	idFound = true;
 	CheckEof();
 	return s;
 }
 
-SymTable* Parser::GetArgs(string name, list<string>** arg_names){
+SymTable* Parser::GetArgs(SymStIt curTable, string name, list<string>** arg_names){
 	list<string> args;
 	SymTable* argsTable = new SymTable();
 	SymType* type = NULL;
@@ -199,7 +323,7 @@ SymTable* Parser::GetArgs(string name, list<string>** arg_names){
 			if (tt == ttVar)
 				CheckEof();
 			while (TokType() != ttSemi && TokType() != ttRightParentheses){
-				string par = CheckCurTok("function", argsTable);
+				string par = CheckCurTok(curTable, "function", argsTable);
 				args.push_back(par);
 				(*arg_names)->push_back(par);
 				++args_num;
@@ -207,7 +331,7 @@ SymTable* Parser::GetArgs(string name, list<string>** arg_names){
 					CheckEof();
 				else if (TokType() == ttColon){
 					CheckEof();
-					type = ParseType(false);
+					type = (SymType*)ParseType(curTable, false);
 					if (type->GetName()[0] >= '0' && type->GetName()[0] <= '9')
 						throw Error("Invalid type", TokPos(), TokLine());
 					CheckEof();
@@ -230,52 +354,66 @@ SymTable* Parser::GetArgs(string name, list<string>** arg_names){
 	return argsTable;
 }
 
-void Parser::CheckProcDecl(){
+
+Symbol* Parser::ParseProcedure(SymStIt curTable, bool newProc, bool func){
+	SymProc* res = NULL;
+	string ident = TokVal();
+	if (newProc)
+		string ident = func ? CheckCurTok(curTable, "function", *curTable) : 
+							CheckCurTok(curTable, "procedure", *curTable);
+	list<string>* arg_names = new list<string>;
+	SymTable* argTable = GetArgs(curTable, ident, &arg_names);
+	SymTable* locals = new SymTable();
+	SymType* type = NULL;
+	if (func){
+		if (TokType() != ttColon)
+			throw Error("Function type expected", TokPos(), TokLine());
+		CheckEof();
+		type = (SymType*)ParseType(curTable, false);
+		CheckEof();
+	}
+	tableStack->push_back(argTable);
+	tableStack->push_back(locals);
 	if (TokVal() != ";")
 		if (TokVal() == "EOF")
 			throw Error("Unexpected end of file", TokPos(), TokLine());
 		else
 			SmthExpexted(TokVal(), TokPos(), TokLine(), ";");
 	CheckEof();
-	SmthExpexted(TokVal(), TokPos(), TokLine(), "Forward");
-	CheckEof();
-	SmthExpexted(TokVal(), TokPos(), TokLine(), ";");
-}
-
-SymProc* Parser::ParseProcedure(bool newProc, bool func){
-	SymProc* res = NULL;
-	string ident = TokVal();
-	if (newProc)
-		string ident = func ? CheckCurTok("function", table()) : CheckCurTok("procedure", table());
-	list<string>* arg_names = new list<string>;
-	SymTable* argTable = GetArgs(ident, &arg_names);
-	if (func){
-		SymType* type = NULL;
-		if (TokType() != ttColon)
-			throw Error("Function type expected", TokPos(), TokLine());
+	StmtBlock* body = NULL;
+	if (TokType() != ttForward){
+		if (TokType() != ttBegin)
+			throw Error("Begin expected, but " + TokVal() + " found", TokPos(), TokLine());
+		scan.Next();
+		SymStIt it;
+		for (SymStIt i = tableStack->begin(); i != tableStack->end(); ++i)
+			it = i;
+		ParseDecl(it);
+		body = ParseBlock(it, false);
+	}else
+	{
 		CheckEof();
-		type = ParseType(false);
-		CheckEof();
-		res = new SymFunc(ident, argTable, NULL, arg_names, type);
+		SmthExpexted(TokVal(), TokPos(), TokLine(), ";");
 	}
+	if (func)
+		res = new SymFunc(ident, argTable, locals, arg_names, body, type);
 	else
-		res = new SymProc(ident, argTable, NULL, arg_names);
-	CheckProcDecl();
+		res = new SymProc(ident, argTable, locals, arg_names, body);
 	if (newProc)
-		(*table())[ident] = res;
+		(**curTable)[ident] = res;
 	scan.Next();
 	res->Print(os, false);
 	os << "\n";
 	return res;
 }
 
-SymTable* Parser::ParseVarRecordBlock(TokenType tt){ 
+SymTable* Parser::ParseVarRecordBlock(SymStIt curTable, TokenType tt){ 
 	list<string> idents;
-	SymTable* curTable = NULL;
-	curTable = (tt == ttVar) ? table() : new SymTable();
+	SymTable* curTbl = NULL;
+	curTbl = (tt == ttVar) ? *curTable : new SymTable();
 	string b_name = (tt == ttVar) ? "var" : "record";
 	while(true){
-		string s = CheckCurTok(b_name, curTable);
+		string s = CheckCurTok(curTable, b_name, curTbl);
 		idents.push_back(s);
 		if (TokType() == ttPoint)
 			CheckEof();
@@ -283,16 +421,16 @@ SymTable* Parser::ParseVarRecordBlock(TokenType tt){
 			if (TokType() != ttColon)
 				throw Error("Invalid lexem in " + b_name + " block", TokPos(), TokLine());
 			CheckEof();
-			SymType* type = ParseType(false);
+			SymType* type = (SymType*)ParseType(curTable, false);
 			CheckEof();
 			if (tt == ttVar && type->GetName() == "")
 				type->SetName(toString(id++));
 			for (list<string>::iterator it1 = idents.begin(); it1 != idents.end(); ++it1){
-				SymTable::iterator it = FindS(*it1, curTable);
-				if (it != curTable->end())
+				SymTable::iterator it = FindS(*it1, curTbl);
+				if (it != curTbl->end())
 					throw Error("Identifier already declared", TokPos(), TokLine());
 				SymVar* v = (tt == ttVar) ? (SymVar*)new SymVarGlobal(*it1, type) : (SymVar*)new SymVarLocal(*it1, type);
-				(*curTable)[*it1] = v;
+				(*curTbl)[*it1] = v;
 				if (tt == ttVar){
 					v->Print(os, type->GetName()[0] >= '0' && type->GetName()[0] <= '9');
 					os << "\n";
@@ -306,7 +444,7 @@ SymTable* Parser::ParseVarRecordBlock(TokenType tt){
 					scan.Next();
 				else
 					if (AnothBlock(TokVal()))
-						return curTable;		
+						return curTbl;		
 			}
 			else{
 				CheckEof();
@@ -318,20 +456,20 @@ SymTable* Parser::ParseVarRecordBlock(TokenType tt){
 	}
 	if (tt == ttVar)
 		scan.Next();
-	return curTable;
+	return curTbl;
 }
 
-SymVarConst* Parser::ParseConst(bool newConst){
+Symbol* Parser::ParseConst(SymStIt curTable, bool newConst){
 	SymVarConst* res = NULL;
 	SymType* type = NULL;
 	string curId = curIdent;
 	if (IsConstType(TokType())){
 		if (IsIntType(TokType())){
-			type = (SymType*)table()->find("INTEGER")->second;
+			type = (SymType*)(*curTable)->find("INTEGER")->second;
 			res = new SymVarConstInt(curId, type, ((IntLiteral*)scan.GetToken())->GetVal());
 		}
 		else if (TokType() == ttRealLit){
-			type = (SymType*)table()->find("REAL")->second;
+			type = (SymType*)(*curTable)->find("REAL")->second;
 			res = new SymVarConstReal(curId, type, ((RealLiteral*)scan.GetToken())->GetVal());
 		}
 	} 
@@ -339,9 +477,10 @@ SymVarConst* Parser::ParseConst(bool newConst){
 		if (TokType() != ttIdentifier)
 			throw Error("Invalid lexem in constant declaration", TokPos(), TokLine());
 		string s = TokVal();
-		SymTable::iterator it = FindS(s, table());
-		if (it == table()->end())
+		SymTable::iterator it = FindS(TokVal(), curTable, tableStack->begin());
+		if (!idFound)
 			throw Error("Unknown constant name", TokPos(), TokLine());	
+		idFound = true;
 		if (!it->second->IsConst())
 			throw Error("Invalid constant name", TokPos(), TokLine());
 		type = ((SymVarConst*)(it->second))->GetType();
@@ -356,29 +495,29 @@ SymVarConst* Parser::ParseConst(bool newConst){
 	return res;
 }
 
-void Parser::ParseTypeConstBlock(TokenType tt){
+void Parser::ParseTypeConstBlock(SymStIt curTable, TokenType tt){
 	Symbol * res = NULL;
 	string b_name = (tt == ttType) ? "type" : "const";
 	while (true){
-		string ident = CheckCurTok(b_name, table());
+		string ident = CheckCurTok(curTable, b_name, *curTable);
 		if (TokType() != ttEq)
 			throw Error("Invalid lexem in " + b_name + " declaration", TokPos(), TokLine());
 		CheckEof();
 		if (tt == ttType){
-			res = ParseType(true);
+			res = ParseType(curTable, true);
 			CheckEof();
 			res->SetName(ident);
 			res->Print(os, true);
 		}
 		else{
 			curIdent = ident;
-			res = ParseConst(true);
+			res = ParseConst(curTable, true);
 			CheckEof();
 			curIdent = "";
 			res->Print(os, true);
 		}
 		os << ";\n";
-		(*table())[ident] = res;
+		(**curTable)[ident] = res;
 		SmthExpexted(TokVal(), TokPos(), TokLine(), ";");
 		scan.Next();
 		if (TokType() == ttType && tt == ttType || TokType() == ttConst && tt == ttConst)
@@ -389,7 +528,7 @@ void Parser::ParseTypeConstBlock(TokenType tt){
 	}
 }
 
-SymType* Parser::ParseType(bool newType){
+Symbol* Parser::ParseType(SymStIt curTable, bool newType){
 	SymType* res = NULL;
 	TokenType tt = TokType();
 	string s = TokVal();
@@ -399,18 +538,18 @@ SymType* Parser::ParseType(bool newType){
 		isPntr = true;
 		s = TokVal();
 	}
-	SymTable::iterator it = FindS(s, table());
-	if (it != table()->end()){
+	SymTable::iterator it = FindS(TokVal(), curTable, tableStack->begin());
+	if (idFound){
 		if (isPntr)
-			res = new SymTypePointer(curIdent, (SymType*)(it->second));	
+			res = new SymTypePointer(curIdent, (SymType*)it->second);	
 		else{
 			if (newType){
-				if (!(it->second)->IsType())
+				if (!it->second->IsType())
 					throw Error("Invalid lexem in type declaration", TokPos(), TokLine());
-				res = new SymTypeAlias(curIdent, (SymType*)(it->second));	
+				res = new SymTypeAlias(curIdent, (SymType*)it->second);	
 			} 
 			else
-				res = (SymType*)(it->second);
+				res = (SymType*)it->second;
 		}
 	} 
 	else {
@@ -419,33 +558,33 @@ SymType* Parser::ParseType(bool newType){
 		switch(tt){
 		case ttRecord:
 			CheckEof();
-			res = new SymTypeRecord(toString(id++), ParseVarRecordBlock(ttRecord));
+			res = new SymTypeRecord(toString(id++), ParseVarRecordBlock(curTable, ttRecord));
 			break;
 		case ttArray:
 			CheckEof();
-			res = ParseArray();
+			res = (SymType*)ParseArray(curTable);
 			break;
 		default:
-			if (it == table()->end() && !newType)
+			if (it == (*curTable)->end() && !newType)
 				throw Error("Unknown type", TokPos(), TokLine());
 		}
 	}
 	return res;
 }
 
-SymTypeArray* Parser::ParseArray(){
-	SymTypeArray* res = NULL;
+Symbol* Parser::ParseArray(SymStIt curTable){
+	Symbol* res = NULL;
 	if (TokType() != ttLeftBracket)
 		throw Error("Invalid array declaration", TokPos(), TokLine());
-	list<SymVarConst*> left, right;
+	list<Symbol*> left, right;
 	CheckEof();
 	while (TokType() != ttRightBracket){
-		SymVarConst* l = ParseConst(false);
+		Symbol* l = ParseConst(curTable, false);
 		CheckEof();
 		if (TokType() != ttDblDot)
 			throw Error("Invalid array declaration", TokPos(), TokLine());
 		CheckEof();
-		SymVarConst* r = ParseConst(false);
+		Symbol* r = ParseConst(curTable, false);
 		CheckEof();
 		if (!(l->GetType()->IsInt() && r->GetType()->IsInt()))
 			throw Error("Invalid array bounds", TokPos(), TokLine());
@@ -460,12 +599,12 @@ SymTypeArray* Parser::ParseArray(){
 	if (TokType() != ttOf)
 		throw Error("Invalid array declaration", TokPos(), TokLine());
 	CheckEof();
-	SymType* type = ParseType(false);
-	list<SymVarConst*>::reverse_iterator itl = left.rbegin();
-	list<SymVarConst*>::reverse_iterator itr = right.rbegin();
+	Symbol* type = ParseType(curTable, false);
+	list<Symbol*>::reverse_iterator itl = left.rbegin();
+	list<Symbol*>::reverse_iterator itr = right.rbegin();
 	for (; itl != left.rend() && itr != right.rend(); ++itl, ++itr)
 	{
-		res = new SymTypeArray(toString(id++), type, (SymVarConst*)*itl, (SymVarConst*)*itr);
+		res = new SymTypeArray(toString(id++), (SymType*)type, (SymVarConst*)*itl, (SymVarConst*)*itr);
 		type = res;
 	}
 	return res;
@@ -502,69 +641,54 @@ int FillTreeBinOp(int i, int j, string Value, NodeExpr* left, NodeExpr* right){
 	return hl + hr + 2;
 }
 
-bool EqTypes(SymType* t1, SymType* t2){
-	while(t1->IsAlias())
-		t1 = ((SymTypeAlias*)t1)->GetRefType();
-	while (t2->IsAlias())
-		t2 = ((SymTypeAlias*)t2)->GetRefType();
-	return t1 == t2;
-}
-
-bool IToR(SymType* t1, SymType* t2){
-	while(t1->IsAlias())
-		t1 = ((SymTypeAlias*)t1)->GetRefType();
-	while (t2->IsAlias())
-		t2 = ((SymTypeAlias*)t2)->GetRefType();
-	return t1->GetName() == "REAL" && t2->GetName() == "INTEGER";
-}
-
-StmtAssign* Parser::ParseAssignment(){
-	NodeExpr* expr = ParseSimple(5);
+StmtAssign* Parser::ParseAssignment(SymStIt curTable){
+	NodeExpr* expr = ParseSimple(curTable, 5);
 	BinaryOp* res = new BinaryOp(expr->GetSymbol(), expr->GetPos(), expr->GetLine(), expr, NULL);
 	if (expr->GetValue() == ":="){
-		BinaryOp* res = (BinaryOp*)expr;
+		res = (BinaryOp*)expr;
 		NodeExpr* lExpr = expr;
 		while(lExpr->IsBinaryOp())
 			lExpr = ((BinaryOp*)lExpr)->GetLeft();
 		if (!res->GetLeft()->LValue())
 			throw Error ("Left part of assignment must be lvalue", lExpr->GetPos(), lExpr->GetLine());
-		SymType* t1 = res->GetLeft()->GetType();
-		SymType* t2 = res->GetRight()->GetType();
-		if (!(t1 && t2 && (EqTypes(t1, t2) || IToR(t1, t2))))
+		Symbol* t1 = res->GetLeft()->GetType();
+		Symbol* t2 = res->GetRight()->GetType();
+		if (!(t1 && t2 && (EqTypes((SymType*)t1, (SymType*)t2) || IToR((SymType*)t1,(SymType*) t2))))
 			throw Error("Incompatible types in assignment", lExpr->GetPos(), lExpr->GetLine());
 	}
-	return new StmtAssign(res->GetLeft(), res->GetRight());
 	//os << "\n";
 	//expr->Print(os, 0);
+	return new StmtAssign(res->GetLeft(), res->GetRight());
+	
 }
 
-NodeExpr* Parser::ParseSimple(int prior){
+NodeExpr* Parser::ParseSimple(SymStIt curTable, int prior){
 	if (prior == 1)
-		return ParseFactor();
+		return ParseFactor(curTable);
 	SymType* type = NULL;
 	int pos = TokPos();
 	int line = TokLine();
-	NodeExpr* res = ParseSimple(prior - 1);
+	NodeExpr* res = ParseSimple(curTable, prior - 1);
 	while (FindOpPrior(TokVal()) == prior){
 		string str = TokVal();
 		scan.Next();
-		NodeExpr* expr1 = ParseSimple(prior - 1);
+		NodeExpr* expr1 = ParseSimple(curTable, prior - 1);
 		if (!expr1)
 			throw Error("Lexem expected, EOF found", TokPos(), TokLine());
-		if (expr1->IsInt() && (res->GetType()->IsScalar() && !res->IsInt())){
+		if (expr1->IsInt() && (((SymType*)res->GetType())->IsScalar() && !res->IsInt())){
 			expr1 = new UnaryOp(new Symbol("ItoR"), pos, line, expr1);
-			expr1->SetType((SymType*)(*table())["REAL"]);
+			expr1->SetType((SymType*)((**curTable)["REAL"]));
 		}
-		else if (prior != 5 && (res->IsInt() && (expr1->GetType()->IsScalar() && !expr1->IsInt()))){
+		else if (prior != 5 && (res->IsInt() && (((SymType*)expr1->GetType())->IsScalar() && !expr1->IsInt()))){
 			res = new UnaryOp(new Symbol("ItoR"), pos, line, res);
-			res->SetType((SymType*)(*table())["REAL"]);
+			res->SetType((SymType*)((**curTable)["REAL"]));
 		}
 		res = new BinaryOp(new Symbol(str), pos, line, res, expr1);
 		if (prior == 5)
 			break;
-		type = (res->IsInt()) ? (SymType*)(*table())["INTEGER"] : (SymType*)(*table())["REAL"];
+		type = (res->IsInt()) ? (SymType*)((**curTable)["INTEGER"]) : (SymType*)((**curTable)["REAL"]);
 		res->SetType(type);
-		if (!res->GetType()->IsScalar() || !expr1->GetType()->IsScalar())
+		if (!((SymType*)res->GetType())->IsScalar() || !((SymType*)expr1->GetType())->IsScalar())
 			throw Error("Invalid types in binary operation", pos, line);
 		pos = TokPos();
 		line = TokLine();
@@ -572,19 +696,19 @@ NodeExpr* Parser::ParseSimple(int prior){
 	return res;
 }
 
-NodeExpr* Parser::ParseNext(){
+NodeExpr* Parser::ParseNext(SymStIt curTable){
 	scan.Next();
-	NodeExpr* expr1 = ParseSimple(4);
+	NodeExpr* expr1 = ParseSimple(curTable, 4);
 	if (!expr1)
 		throw Error("Lexem expected, EOF found", TokPos(), TokLine());
 	return expr1;
 }
 
-Const* Parser::ParseConst(){
+Const* Parser::ParseConst(SymStIt curTable){
 	Const* res = NULL;
 	int pos = TokPos();
 	int line = TokLine();
-	SymTable::iterator it = FindS(TokVal(), table());
+	SymTable::iterator it = FindS(TokVal(), curTable, tableStack->begin());
 	scan.Next();
 	CheckAccess(TokVal(), TokPos(), TokLine());
 	nextScan = false;
@@ -593,13 +717,13 @@ Const* Parser::ParseConst(){
 	return res;
 }
 
-NodeExpr* Parser::ParseVariable(NodeExpr* res){
+NodeExpr* Parser::ParseVariable(SymStIt curTable, NodeExpr* res){
 	string s;
-	SymVar* var = NULL;
+	Symbol* var = NULL;
 	int pos = TokPos();
 	int line = TokLine();
 	if (!res) {
-		SymTable::iterator it = FindS(TokVal(), table());
+		SymTable::iterator it = FindS(TokVal(), curTable, tableStack->begin());
 		var = (SymVar*)(it->second);
 		s = TokVal();
 		Symbol* symb = new Symbol(s);
@@ -607,7 +731,7 @@ NodeExpr* Parser::ParseVariable(NodeExpr* res){
 	}
 	else{
 		s = res->GetValue();
-		var = new SymVar(res->GetSymbol()->GetName(), res->GetType());
+		var = new SymVar(res->GetSymbol()->GetName(), (SymType*)res->GetType());
 	}
 	SymType* type = var->GetType();
 	if (!var->GetType()->IsArray() && !var->GetType()->IsRecord() && !var->IsFunc())
@@ -617,7 +741,7 @@ NodeExpr* Parser::ParseVariable(NodeExpr* res){
 			if (!var->GetType()->IsArray() && !var->GetType()->IsRecord() && !var->IsFunc())
 				break;
 			if (var->IsFunc()){
-				res = ParseFunc(res, &var, pos, line);
+				res = ParseFunc(curTable, res, &var, pos, line);
 				nextScan = false;
 			}
 			else{
@@ -631,7 +755,7 @@ NodeExpr* Parser::ParseVariable(NodeExpr* res){
 					break;
 				}
 				else
-					res = (var->GetType()->IsArray()) ? (NodeExpr*)ParseArr(res, &var, pos, line) : (NodeExpr*)ParseRecord(res, &var, pos, line);
+					res = (var->GetType()->IsArray()) ? (NodeExpr*)ParseArr(curTable, res, &var, pos, line) : (NodeExpr*)ParseRecord(curTable, res, &var, pos, line);
 			}
 			pos = TokPos();
 			line = TokLine();
@@ -641,12 +765,12 @@ NodeExpr* Parser::ParseVariable(NodeExpr* res){
 	return res;
 }
 
-ArrayAccess* Parser::ParseArr(NodeExpr* res, SymVar** var, int pos, int line){
+ArrayAccess* Parser::ParseArr(SymStIt curTable, NodeExpr* res, Symbol** var, int pos, int line){
 	SymType* type = (*var)->GetType();
 	if (TokType() == ttLeftBracket){
 		scan.Next();
 		while (true){
-			NodeExpr* expr = ParseSimple(4);
+			NodeExpr* expr = ParseSimple(curTable, 4);
 			CheckIsInt(expr, expr->GetPos(), expr->GetLine());
 			Symbol* symb = new Symbol("[]");
 			res = new ArrayAccess(symb, pos, line, res, expr);
@@ -680,7 +804,7 @@ ArrayAccess* Parser::ParseArr(NodeExpr* res, SymVar** var, int pos, int line){
 	return (ArrayAccess*)res;
 }
 
-FunctionCall* Parser::ParseFunc(NodeExpr* res, SymVar** var, int pos, int line){
+FunctionCall* Parser::ParseFunc(SymStIt curTable, NodeExpr* res, Symbol** var, int pos, int line){
 	SymType* type = ((SymFunc*)*var)->GetType();
 	string s = TokVal();
 	scan.Next();
@@ -693,20 +817,21 @@ FunctionCall* Parser::ParseFunc(NodeExpr* res, SymVar** var, int pos, int line){
 		scan.Next();
 		while (TokType() != ttRightParentheses){
 			it1 = FindS(*it, arg_table);
-			NodeExpr* expr = ParseSimple(4);
+			NodeExpr* expr = ParseSimple(curTable, 4);
 			SymVar* curVar = ((SymVar*)(it1->second));
 			if (curVar->IsParamByRef()){
-				if (!(EqTypes(expr->GetType(), curVar->GetType())))
+				if (!(EqTypes((SymType*)expr->GetType(), (SymType*)curVar->GetType())))
 					throw Error("Incompatible types", expr->GetPos(), expr->GetLine());
 				if (!expr->LValue())
 					throw Error("Variable identifier expected", expr->GetPos(), expr->GetLine());
 			}
 			else{
-				if (!EqTypes(expr->GetType(), curVar->GetType()) && !IToR(curVar->GetType(), expr->GetType()))
+				if (!EqTypes((SymType*)expr->GetType(), (SymType*)curVar->GetType()) && 
+					!IToR((SymType*)curVar->GetType(), (SymType*)expr->GetType()))
 					throw Error("Incompatible types", expr->GetPos(), expr->GetLine());
-				if (IToR(curVar->GetType(), expr->GetType())){
+				if (IToR((SymType*)curVar->GetType(), (SymType*)expr->GetType())){
 					expr = new UnaryOp(new Symbol("ItoR"), TokPos(), TokLine(), expr);
-					expr->SetType((SymType*)(*table())["REAL"]);
+					expr->SetType((SymType*)((**curTable)["REAL"]));
 				}
 			}
 			args.push_back(expr);
@@ -732,7 +857,7 @@ FunctionCall* Parser::ParseFunc(NodeExpr* res, SymVar** var, int pos, int line){
 	return (FunctionCall*)res;
 }
 
-RecordAccess* Parser::ParseRecord(NodeExpr* res, SymVar** var, int pos, int line){
+RecordAccess* Parser::ParseRecord(SymStIt curTable, NodeExpr* res, Symbol** var, int pos, int line){
 	string s = TokVal();
 	SymType* type = (*var)->GetType();
 	NodeExpr* expr = NULL;
@@ -771,7 +896,7 @@ RecordAccess* Parser::ParseRecord(NodeExpr* res, SymVar** var, int pos, int line
 	return (RecordAccess*)res;
 }
 
-NodeExpr* Parser::ParseFactor(){
+NodeExpr* Parser::ParseFactor(SymStIt curTable){
 	NodeExpr* res = NULL;
 	int pos = TokPos();
 	int line = TokLine();
@@ -783,25 +908,26 @@ NodeExpr* Parser::ParseFactor(){
 	if (IsUnaryOp(TokVal())){
 		string str = TokVal();
 		scan.Next();
-		NodeExpr* expr1 = ParseFactor();
+		NodeExpr* expr1 = ParseFactor(curTable);
 		if (!expr1)
 			throw Error("Lexem expected, EOF found", TokPos(), TokLine());
 		Symbol* symb = new Symbol(str);
 		res = new UnaryOp(symb, pos, line, expr1);
-		if (!expr1->GetType()->IsScalar())
+		if (!((SymType*)expr1->GetType())->IsScalar())
 			throw Error("Invalid unary operation", pos, line);
 		res->SetType(expr1->GetType()); 
 	}
 	else if (TokType() == ttIdentifier){
-		SymTable::iterator it = FindS(TokVal(), table());
-		if (it == table()->end())
+		SymTable::iterator it = FindS(TokVal(), curTable, tableStack->begin());
+		if (!idFound)
 			throw Error("Unknown identifier", TokPos(), TokLine());
+		idFound = true;
 		if (it->second->IsType())
 			throw Error("Invalid identifier", TokPos(), TokLine());
 		if (it->second->IsConst())
-			res = ParseConst();
+			res = ParseConst(curTable);
 		else if (it->second->IsVar() || it->second->IsFunc())
-			res = ParseVariable(NULL);
+			res = ParseVariable(curTable, NULL);
 		if (nextScan)
 			scan.Next();
 		nextScan = true;
@@ -810,11 +936,11 @@ NodeExpr* Parser::ParseFactor(){
 		SymVarConst* symb = NULL;
 		SymType* type = NULL;
 		if (IsIntType(TokType())){
-			type = (SymType*)(*table())["INTEGER"];
+			type = (SymType*)((**curTable)["INTEGER"]);
 			symb = new SymVarConstInt(TokVal(),type, ((IntLiteral*)scan.GetToken())->GetVal());
 		}
 		else {
-			type = (SymType*)(*table())["REAL"];
+			type = (SymType*)((**curTable)["REAL"]);
 			symb = new SymVarConstReal(TokVal(),type, ((RealLiteral*)scan.GetToken())->GetVal());
 		}
 		res = new Const(symb, pos, line);
@@ -825,11 +951,11 @@ NodeExpr* Parser::ParseFactor(){
 		scan.Next();
 		if (TokType() == ttRightParentheses)
 			throw Error("Empty bracket sequence", pos, line);
-		res = ParseSimple(4);
+		res = ParseSimple(curTable, 4);
 		if (TokType() != ttRightParentheses)
 			throw Error("Unclosed bracket", pos, line);
 		if (res->IsFunction() || res->LValue() && !isAccess)
-			res = ParseVariable(res);
+			res = ParseVariable(curTable, res);
 		scan.Next();
 	}
 	else

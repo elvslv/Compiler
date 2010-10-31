@@ -1,8 +1,10 @@
 #include "Parser.h"
+#include "ExprParser.h"
 #include <iostream>
 #include <fstream>
 int main(int argc, char* argv[])
 {
+	//cout << argv[0];
 	if (argc == 1)
 	{
 		cout << "Pascal Compiler. Vasilyeva Elena, FENU, 236 group. 2010\n";
@@ -11,6 +13,7 @@ int main(int argc, char* argv[])
 		cout << "-lex Print tokens info\n";
 		cout << "-syn Print syntax tree\n";
 		cout << "-sym Print symbols table\n";
+		cout << "-symt Print symbols table and tree\n";
 	}
 	else
 	{
@@ -28,6 +31,7 @@ int main(int argc, char* argv[])
 					bool flex = false;
 					bool fsyn = false;
 					bool fsym = false;
+					bool fsymt = false;
 					for (int i = 2; i < argc; ++i){
 						if (strcmp(argv[i], "-lex") == 0)
 							flex = true;
@@ -35,6 +39,8 @@ int main(int argc, char* argv[])
 							fsyn = true;
 						if (strcmp(argv[i], "-sym") == 0)
 							fsym = true;
+						if (strcmp(argv[i], "-symt") == 0)
+							fsymt = true;					
 					}
 					if (flex){
 						while(scanner.GetToken()->GetType() != ttBadToken && scanner.GetToken()->GetType() != ttEOF)
@@ -54,9 +60,13 @@ int main(int argc, char* argv[])
 							if (expr)
 								expr->Print(os, 0);
 					}
-					if (fsym){
+					if (fsym || fsymt){
 						Parser parser(scanner, os);
-						parser.ParseDecl();
+						parser.ParseMainDecl();
+						if (fsym)
+							parser.ParseMainBlock(true);
+						else
+							parser.ParseMainBlock(false);
 						int i = 0;
 					}
 					is.close();

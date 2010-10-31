@@ -1,19 +1,272 @@
-var A : INTEGER;
-var B : REAL;
-var C : array [const 1..const 10] of INTEGER;
-var D : array [const 1..const 9] of array [const 10..const 19] of REAL;
-const M = 10;
-const T = 12;
-const PI = 3.141592653;
-const EPS = 1e-010;
-const F = 10;
-type INT = INTEGER;
-type T1 = record 
-    var A : INTEGER;
-    var B : INT;
-end;
-type T2 = array [const 1..const 20] of array [const 10..const 15] of REAL;
-function TRRR: INTEGER;
-function TRRRR(var (by ref) A : INTEGER;var B : REAL;): REAL;
-procedure PROC;
-procedure PROC1(var (by ref) F : REAL;var I : INTEGER;var (by ref) M : REAL;);
+type TARR = array [const 1..const 10] of INTEGER;
+function FUNC: TARR;
+var I : INTEGER;
+var J : INTEGER;
+var K : INTEGER;
+var M : INTEGER;
+
+begin                       
+|                           
+|___repeat                  
+|   |                       
+|   |___begin               
+|   |   |                   
+|   |   |___:=              
+|   |   |   |               
+|   |   |   |___I           
+|   |   |   |               
+|   |   |   |___7           
+|   |   |                   
+|   |   |___if              
+|   |   |   |               
+|   |   |   |___>           
+|   |   |   |   |           
+|   |   |   |   |___K       
+|   |   |   |   |           
+|   |   |   |   |___6       
+|   |   |   |               
+|   |   |   then            
+|   |   |   |               
+|   |   |   |___begin       
+|   |   |   |   |           
+|   |   |   |   |___break   
+|   |   |   |   |           
+|   |   |   |   end         
+|   |   |   |               
+|   |   |   else            
+|   |   |   |               
+|   |   |   |___begin       
+|   |   |       |           
+|   |   |       |___continue
+|   |   |       |           
+|   |   |       end         
+|   |   |                   
+|   |   end                 
+|   |                       
+|   until                   
+|   |                       
+|   |___=                   
+|       |                   
+|       |___I               
+|       |                   
+|       |___7               
+|                           
+|___if                      
+|   |                       
+|   |___<                   
+|   |   |                   
+|   |   |___I               
+|   |   |                   
+|   |   |___7               
+|   |                       
+|   then                    
+|   |                       
+|   |___begin               
+|       |                   
+|       |___:=              
+|       |   |               
+|       |   |___I           
+|       |   |               
+|       |   |___10          
+|       |                   
+|       end                 
+|                           
+|___if                      
+|   |                       
+|   |___>                   
+|   |   |                   
+|   |   |___I               
+|   |   |                   
+|   |   |___10              
+|   |                       
+|   then                    
+|   |                       
+|   |___begin               
+|   |   |                   
+|   |   |___:=              
+|   |   |   |               
+|   |   |   |___J           
+|   |   |   |               
+|   |   |   |___10          
+|   |   |                   
+|   |   |___:=              
+|   |   |   |               
+|   |   |   |___K           
+|   |   |   |               
+|   |   |   |___8           
+|   |   |                   
+|   |   end                 
+|   |                       
+|   else                    
+|   |                       
+|   |___begin               
+|       |                   
+|       |___:=              
+|       |   |               
+|       |   |___M           
+|       |   |               
+|       |   |___15          
+|       |                   
+|       end                 
+|                           
+|___:=                      
+|   |                       
+|   |___I                   
+|   |                       
+|   |___[]                  
+|       |                   
+|       |___()              
+|       |   |               
+|       |   |___FUNC        
+|       |                   
+|       |___5               
+|                           
+|___:=                      
+|   |                       
+|   |___I                   
+|   |                       
+|   |___J                   
+|                           
+|___:=                      
+|   |                       
+|   |___J                   
+|   |                       
+|   |___I                   
+|                           
+|___begin                   
+|   |                       
+|   |___:=                  
+|   |   |                   
+|   |   |___I               
+|   |   |                   
+|   |   |___I               
+|   |                       
+|   end                     
+|                           
+|___while                   
+|   |                       
+|   |___>                   
+|   |   |                   
+|   |   |___I               
+|   |   |                   
+|   |   |___J               
+|   |                       
+|   do                      
+|   |                       
+|   |___begin               
+|       |                   
+|       |___:=              
+|       |   |               
+|       |   |___I           
+|       |   |               
+|       |   |___J           
+|       |                   
+|       end                 
+|                           
+|___while                   
+|   |                       
+|   |___>                   
+|   |   |                   
+|   |   |___I               
+|   |   |                   
+|   |   |___5               
+|   |                       
+|   do                      
+|   |                       
+|   |___begin               
+|       |                   
+|       |___:=              
+|       |   |               
+|       |   |___I           
+|       |   |               
+|       |   |___+           
+|       |       |           
+|       |       |___5       
+|       |       |           
+|       |       |___6       
+|       |                   
+|       |___:=              
+|       |   |               
+|       |   |___J           
+|       |   |               
+|       |   |___[]          
+|       |       |           
+|       |       |___()      
+|       |       |   |       
+|       |       |   |___FUNC
+|       |       |           
+|       |       |___7       
+|       |                   
+|       end                 
+|                           
+|___for                     
+|   |                       
+|   |___:=                  
+|   |   |                   
+|   |   |___I               
+|   |   |                   
+|   |   |___1               
+|   |                       
+|   to                      
+|   |                       
+|   |___J                   
+|   |                       
+|   do                      
+|   |                       
+|   |___begin               
+|       |                   
+|       |___:=              
+|       |   |               
+|       |   |___K           
+|       |   |               
+|       |   |___M           
+|       |                   
+|       end                 
+|                           
+|___for                     
+|   |                       
+|   |___:=                  
+|   |   |                   
+|   |   |___J               
+|   |   |                   
+|   |   |___+               
+|   |       |               
+|   |       |___I           
+|   |       |               
+|   |       |___5           
+|   |                       
+|   to                      
+|   |                       
+|   |___-                   
+|   |   |                   
+|   |   |___K               
+|   |   |                   
+|   |   |___8               
+|   |                       
+|   do                      
+|   |                       
+|   |___begin               
+|       |                   
+|       |___:=              
+|       |   |               
+|       |   |___M           
+|       |   |               
+|       |   |___6           
+|       |                   
+|       |___:=              
+|       |   |               
+|       |   |___I           
+|       |   |               
+|       |   |___+           
+|       |       |           
+|       |       |___M       
+|       |       |           
+|       |       |___DIV     
+|       |           |       
+|       |           |___7   
+|       |           |       
+|       |           |___2   
+|       |                   
+|       end                 
+|                           
+end                         
