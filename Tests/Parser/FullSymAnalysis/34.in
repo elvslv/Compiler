@@ -1,0 +1,10 @@
+var i, j: integer;
+r: real;
+function func(i: integer): integer;
+begin
+	func := i;
+end;
+begin
+	while func(i) do
+		i := i + 1;
+end.

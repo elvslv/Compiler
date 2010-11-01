@@ -1,0 +1,7 @@
+var i, j: integer;
+begin
+	repeat
+	begin
+	end
+	until i > j;
+end.

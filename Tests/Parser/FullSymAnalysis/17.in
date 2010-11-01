@@ -1,0 +1,7 @@
+var i, j: integer;
+type my_int = integer;
+function func(i : integer): my_int; forward;
+begin
+	if func(10) then
+		i := j;
+end.

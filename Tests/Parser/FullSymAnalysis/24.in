@@ -1,0 +1,6 @@
+var i, j, n, l, k: integer;
+r: real;
+begin
+	for r := 1 to 6 do
+		l := l + k;
+end.

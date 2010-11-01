@@ -1,0 +1,9 @@
+var I : INTEGER;
+var J : INTEGER;
+var N : INTEGER;
+var L : INTEGER;
+var K : INTEGER;
+var R : REAL;
+const M = 18;
+
+9 5 Illegal counter variable

@@ -1,0 +1,22 @@
+var I : INTEGER;
+var J : INTEGER;
+
+begin            
+|                
+|___while        
+|   |            
+|   |___I        
+|   |            
+|   do           
+|   |            
+|   |___begin    
+|       |        
+|       |___:=   
+|       |   |    
+|       |   |___J
+|       |   |    
+|       |   |___5
+|       |        
+|       end      
+|                
+end              

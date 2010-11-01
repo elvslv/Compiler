@@ -1,0 +1,6 @@
+var i, j: integer;
+function func(i : integer): real; forward;
+begin
+	if func(10) then
+		i := j;
+end.

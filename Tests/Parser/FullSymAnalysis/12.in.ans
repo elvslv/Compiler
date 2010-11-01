@@ -1,0 +1,6 @@
+var I : INTEGER;
+var J : INTEGER;
+var ARR : array [const 1..const 10] of INTEGER;
+const M = 12.35;
+
+12 5 Condition must be integer

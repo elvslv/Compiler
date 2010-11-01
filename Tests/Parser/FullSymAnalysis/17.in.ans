@@ -1,0 +1,27 @@
+var I : INTEGER;
+var J : INTEGER;
+type MY_INT = INTEGER;
+
+begin            
+|                
+|___if           
+|   |            
+|   |___()       
+|   |   |        
+|   |   |___FUNC 
+|   |   |        
+|   |   |___10   
+|   |            
+|   then         
+|   |            
+|   |___begin    
+|       |        
+|       |___:=   
+|       |   |    
+|       |   |___I
+|       |   |    
+|       |   |___J
+|       |        
+|       end      
+|                
+end              

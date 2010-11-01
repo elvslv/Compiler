@@ -1,0 +1,37 @@
+var I : INTEGER;
+var J : INTEGER;
+var N : INTEGER;
+var L : INTEGER;
+var K : INTEGER;
+
+begin                
+|                    
+|___for              
+|   |                
+|   |___:=           
+|   |   |            
+|   |   |___I        
+|   |   |            
+|   |   |___1        
+|   |                
+|   to               
+|   |                
+|   |___N            
+|   |                
+|   do               
+|   |                
+|   |___begin        
+|       |            
+|       |___:=       
+|       |   |        
+|       |   |___L    
+|       |   |        
+|       |   |___+    
+|       |       |    
+|       |       |___L
+|       |       |    
+|       |       |___K
+|       |            
+|       end          
+|                    
+end                  

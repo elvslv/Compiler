@@ -1,0 +1,120 @@
+var I : INTEGER;
+var J : INTEGER;
+var K : INTEGER;
+var F : INTEGER;
+type TT = REAL;
+
+procedure PROC(var M : INTEGER;var N : INTEGER;);
+type TT = INTEGER;
+var I : TT;
+var K : TT;
+const M = 12;
+
+begin                
+|                    
+|___if               
+|   |                
+|   |___M            
+|   |                
+|   then             
+|   |                
+|   |___begin        
+|       |            
+|       |___:=       
+|       |   |        
+|       |   |___N    
+|       |   |        
+|       |   |___7    
+|       |            
+|       end          
+|                    
+|___for              
+|   |                
+|   |___:=           
+|   |   |            
+|   |   |___I        
+|   |   |            
+|   |   |___1        
+|   |                
+|   to               
+|   |                
+|   |___M            
+|   |                
+|   do               
+|   |                
+|   |___begin        
+|       |            
+|       |___:=       
+|       |   |        
+|       |   |___K    
+|       |   |        
+|       |   |___+    
+|       |       |    
+|       |       |___K
+|       |       |    
+|       |       |___1
+|       |            
+|       end          
+|                    
+|___:=               
+|   |                
+|   |___F            
+|   |                
+|   |___K            
+|                    
+end                  
+
+
+begin                
+|                    
+|___()               
+|   |                
+|   |___PROC         
+|   |                
+|   |___I            
+|   |                
+|   |___J            
+|                    
+|___()               
+|   |                
+|   |___PROC         
+|   |                
+|   |___+            
+|   |   |            
+|   |___K___I        
+|       |            
+end     |___7        
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     
+                     

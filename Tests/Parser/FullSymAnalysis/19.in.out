@@ -1,0 +1,8 @@
+var I : INTEGER;
+var J : INTEGER;
+type MY_INT = INTEGER;
+var A : record 
+    var X : MY_INT;
+end;
+
+9 5 Condition must be integer

@@ -1,0 +1,9 @@
+var i, j: integer;
+function func(i : integer): integer;
+begin
+       func := i;
+end;
+begin
+        for i := 1 to func(10) do
+                j := 5;
+end.

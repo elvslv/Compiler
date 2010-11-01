@@ -1,0 +1,4 @@
+var I : INTEGER;
+var J : INTEGER;
+
+12 3 Condition must be integer

@@ -1,0 +1,17 @@
+var I : INTEGER;
+var J : INTEGER;
+
+function FUNC(var I : INTEGER;): INTEGER;
+
+begin       
+|           
+|___:=      
+|   |       
+|   |___FUNC
+|   |       
+|   |___I   
+|           
+end         
+
+
+27 7 Lexem expected, EOF found

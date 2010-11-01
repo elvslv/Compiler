@@ -1,0 +1,23 @@
+var I : INTEGER;
+var J : INTEGER;
+const M = 12;
+
+begin            
+|                
+|___if           
+|   |            
+|   |___M        
+|   |            
+|   then         
+|   |            
+|   |___begin    
+|       |        
+|       |___:=   
+|       |   |    
+|       |   |___I
+|       |   |    
+|       |   |___J
+|       |        
+|       end      
+|                
+end              

@@ -1,0 +1,9 @@
+var i, j, n, l, k: integer;
+begin
+	for i := 1 to n do
+	begin
+		l := l + k;
+		k := k + 5;
+		j := 7;
+	end
+end.

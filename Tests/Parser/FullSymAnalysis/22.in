@@ -1,0 +1,5 @@
+var i, j, n, l, k: integer;
+begin
+	for i := 1 to 3.5 do
+		l := l + k;
+end.

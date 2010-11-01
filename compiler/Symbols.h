@@ -57,8 +57,10 @@ public:
 	SymProc(string s, SymTable* ar, SymTable* loc, list<string>* names, Statement* b): Symbol(s), args(ar), locals(loc), argNames(names), body(b) {};
 	virtual bool IsProc() {return true;}
 	void Print(ostream& os, bool f);
+	virtual void PrintBody(ostream& os);
 	SymTable* GetArgsTable() {return args;}
 	list<string>* GetArgNames() {return argNames;}
+	void SetBody(Statement* b) { body = b; }
 protected:
 	SymTable* args;
 	SymTable* locals; 

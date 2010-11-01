@@ -1,0 +1,7 @@
+var I : INTEGER;
+var J : INTEGER;
+var N : INTEGER;
+var L : INTEGER;
+var K : INTEGER;
+
+23 3 Final expression must be integer

@@ -1,0 +1,7 @@
+var i, j: integer;
+type my_int = integer;
+var a: record x: my_int; end;
+begin
+	if a.x then
+		i := j;
+end.

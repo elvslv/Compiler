@@ -1,0 +1,5 @@
+var i, j: integer;
+begin
+        for i := j downto i do
+                j := 5;
+end.

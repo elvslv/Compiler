@@ -114,12 +114,6 @@ class StmtRepeat: public Statement{
 public:
 	StmtRepeat(NodeExpr* exp, Statement* b): expr(exp), body(b){};
 	int FillTree(int i, int j){
-		/*int j1 = j;
-		j = PaintBranch(i, j, j, j + FillTreeIdentConst(i, j, "while"), true);
-		j = PaintBranch(i, j, j, j + expr->FillTree(i + 4, j), false);
-		j = FillTreeOp(i, j, "do");
-		j += body->FillTree(i + 4, j);
-		return j - j1;*/
 		int j1 = j;
 		j = PaintBranch(i, j, j, j + FillTreeIdentConst(i, j, "repeat"), true);
 		j = PaintBranch(i, j, j, j + body->FillTree(i + 4, j), false);
@@ -323,6 +317,7 @@ private:
 	Scanner& scan;
 	ostream& os;
 	SymTableStack* tableStack;
+	SymStIt lowerTable;
 	string curIdent;
 	bool isRecord;
 	bool isAccess;

@@ -1,0 +1,7 @@
+var i, j, n, l, k: integer;
+r: real;
+const m = 18;
+begin
+	for m := 1 to 6 do
+		l := l + k;
+end.

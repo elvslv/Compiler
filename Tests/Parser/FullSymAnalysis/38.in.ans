@@ -1,0 +1,20 @@
+var I : INTEGER;
+var J : INTEGER;
+
+begin        
+|            
+|___repeat   
+|   |        
+|   |___begin
+|   |   |    
+|   |   end  
+|   |        
+|   until    
+|   |        
+|   |___>    
+|       |    
+|       |___I
+|       |    
+|       |___J
+|            
+end          

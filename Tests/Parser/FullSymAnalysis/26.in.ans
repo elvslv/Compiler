@@ -1,0 +1,39 @@
+var I : INTEGER;
+var J : INTEGER;
+var N : INTEGER;
+var L : INTEGER;
+var K : INTEGER;
+var R : REAL;
+const M = 18;
+
+begin                
+|                    
+|___for              
+|   |                
+|   |___:=           
+|   |   |            
+|   |   |___I        
+|   |   |            
+|   |   |___1        
+|   |                
+|   to               
+|   |                
+|   |___M            
+|   |                
+|   do               
+|   |                
+|   |___begin        
+|       |            
+|       |___:=       
+|       |   |        
+|       |   |___L    
+|       |   |        
+|       |   |___+    
+|       |       |    
+|       |       |___L
+|       |       |    
+|       |       |___K
+|       |            
+|       end          
+|                    
+end                  

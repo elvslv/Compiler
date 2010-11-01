@@ -1,0 +1,6 @@
+var i, j: integer;
+const m = 12.35;
+begin
+	if m then
+		i := j;
+end.

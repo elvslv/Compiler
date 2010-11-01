@@ -1,0 +1,7 @@
+var i, j: integer;
+begin
+	while i
+	begin
+		i := i;
+	end;
+end.

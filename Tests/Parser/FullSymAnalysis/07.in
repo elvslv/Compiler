@@ -1,0 +1,5 @@
+var i, j: integer;
+begin
+	if i/5 then
+		i := j;
+end.

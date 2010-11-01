@@ -1,0 +1,7 @@
+var i, j: integer;
+begin
+	if i > j then
+		i := j;
+	else
+		j := i;
+end.

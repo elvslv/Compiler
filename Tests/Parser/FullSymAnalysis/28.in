@@ -1,0 +1,8 @@
+var i, j, n, l, k: integer;
+arr: array[1..10] of integer;
+const m = 18;
+function func(i: integer): integer; forward;
+begin
+	for func(1) := 1 to m do
+		l := l + k;
+end.

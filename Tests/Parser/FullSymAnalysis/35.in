@@ -1,0 +1,8 @@
+var i, j: integer;
+begin
+	while (i < j) and (j <= i) do
+	begin
+		i := j + 1;
+		j := i + 1;
+	end;
+end.

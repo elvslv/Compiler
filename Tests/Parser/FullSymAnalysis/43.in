@@ -1,0 +1,31 @@
+var
+  n, m, l, r, i, t, j: integer;
+  a: array[1..1000] of integer;
+  len: array[1..2000] of integer;
+  p, q: array[1..1000] of integer;
+  ans: integer;
+begin  
+for i := l to r do
+  begin
+    repeat
+     ans := ans + a[q[l]];
+     if j = 7 then
+	break
+     else
+       continue;
+    until l < r;	
+    t := m + n;
+    j := i;
+    while t > n do
+    begin
+      if j <= len[p[t - n]] then
+        t := p[t - n]
+      else
+      begin
+        j := j - len[p[t - n]];
+        t := q[t - n];
+      end;
+    end;
+    ans := ans + a[t];
+  end;
+end.

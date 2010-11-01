@@ -4,7 +4,6 @@
 #include <fstream>
 int main(int argc, char* argv[])
 {
-	//cout << argv[0];
 	if (argc == 1)
 	{
 		cout << "Pascal Compiler. Vasilyeva Elena, FENU, 236 group. 2010\n";
@@ -77,7 +76,7 @@ int main(int argc, char* argv[])
 		}
 		catch(Error err)
 		{
-			os << err.GetErrorPos() << " " << err.GetErrorLine() << " " << err.GetText();
+			os << "\n" <<err.GetErrorPos() << " " << err.GetErrorLine() << " " << err.GetText();
 		}
 	}
 	return 0;

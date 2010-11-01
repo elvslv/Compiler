@@ -1,0 +1,5 @@
+var I : INTEGER;
+var J : INTEGER;
+var R : REAL;
+
+13 4 Condition must be integer

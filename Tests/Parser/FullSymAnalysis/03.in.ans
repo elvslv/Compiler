@@ -1,0 +1,4 @@
+var I : INTEGER;
+var J : INTEGER;
+
+9 4 Then expected, but I found

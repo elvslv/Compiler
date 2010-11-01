@@ -1,0 +1,6 @@
+var i, j: integer;
+r: real;
+begin
+	while r do
+		j := 5;
+end.

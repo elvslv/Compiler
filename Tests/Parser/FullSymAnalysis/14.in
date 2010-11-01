@@ -1,0 +1,7 @@
+var i, j: integer;
+var arr: array[1..10, 1..11] of integer;
+const m = 12.35;
+begin
+	if arr[i] then
+		i := j;
+end.

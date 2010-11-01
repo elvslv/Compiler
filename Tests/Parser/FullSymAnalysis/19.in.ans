@@ -1,0 +1,30 @@
+var I : INTEGER;
+var J : INTEGER;
+type MY_INT = INTEGER;
+var A : record 
+    var X : MY_INT;
+end;
+
+begin            
+|                
+|___if           
+|   |            
+|   |___.        
+|   |   |        
+|   |   |___A    
+|   |   |        
+|   |   |___X    
+|   |            
+|   then         
+|   |            
+|   |___begin    
+|       |        
+|       |___:=   
+|       |   |    
+|       |   |___I
+|       |   |    
+|       |   |___J
+|       |        
+|       end      
+|                
+end              

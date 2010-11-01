@@ -1,0 +1,5 @@
+var I : INTEGER;
+var J : INTEGER;
+const M = 12.35;
+
+10 4 Condition must be integer
