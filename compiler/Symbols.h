@@ -39,6 +39,7 @@ public:
 	virtual bool IsReal() {return false;}
 	virtual bool IsScalar() {return false;}
 	virtual bool IsAlias() {return false; }
+	virtual SymType* GetSourceType() {return this; }
 };
 
 class SymVar: public Symbol{
@@ -118,6 +119,12 @@ public:
 	bool IsScalar() {return refType->IsScalar();}
 	bool IsAlias() {return true; }
 	SymType* GetRefType() {return refType; }
+	SymType* GetSourceType() {
+		SymType* t1 = this;
+		while(t1->IsAlias())
+			t1 = ((SymTypeAlias*)t1)->GetRefType();
+		return t1;
+	}
 private:
 	SymType* refType;
 };

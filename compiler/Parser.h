@@ -4,7 +4,16 @@
 #include "Scanner.h"
 using namespace std;
 
-class SyntaxNode{};
+class SyntaxNode{
+public:
+	virtual int FillTree(int i, int j) = 0;
+	virtual void Print(ostream& os, int n) {
+		ClearArr();
+		int h = FillTree(0, 0) - 1;
+		PrintExpr(os, h);
+	}
+};
+
 class NodeExpr: public SyntaxNode{
 public:
 	NodeExpr(Symbol* symb, int p, int l): symbol(symb), pos(p), line(l){type = NULL;};
@@ -21,11 +30,6 @@ public:
 	Symbol* GetSymbol() {return symbol; }
 	int GetPos() {return pos;}
 	int GetLine() {return line;}
-	void Print(ostream& os, int n) {
-		ClearArr();
-		int h = FillTree(0, 0) - 1;
-		PrintExpr(os, h);
-	}
 protected:
 	Symbol* symbol;
 	Symbol* type;
@@ -36,11 +40,6 @@ int FillTreeBinOp(int i, int j, string Value, NodeExpr* left, NodeExpr* right);
 class Statement: public SyntaxNode{
 public:
 	virtual int FillTree(int i, int j){return 0;}
-	void Print(ostream& os, int n) {
-		ClearArr();
-		int h = FillTree(0, 0) - 1;
-		PrintExpr(os, h);
-	}
 };
 
 class StmtAssign: public Statement{
@@ -55,17 +54,8 @@ private:
 class StmtBlock: public Statement{
 public:
 	StmtBlock(list<Statement*> stmts): statements(stmts){};
-	int FillTree(int i, int j){
-		int j1 = j;
-		j1 = FillTreeOp(i, j, "begin");
-		for (list<Statement*>::iterator it = statements.begin(); it != statements.end(); ++it)
-			j1 = PaintBranch(i, j1, j1, j1 + (*it)->FillTree(i + 4, j1), true);
-		j1 += FillTreeIdentConst(i, j1, "end ");
-		return j1 - j;
-	}
-	void PrintAssignment(ostream& os){
-		(*(statements.begin()))->Print(os, 0);
-	}
+	int FillTree(int i, int j);
+	void PrintAssignment(ostream& os){(*(statements.begin()))->Print(os, 0);}
 private:
 	list<Statement*> statements;
 };
@@ -74,37 +64,17 @@ class StmtIf: public Statement{
 public:
 	StmtIf(NodeExpr* exp, Statement* frst, Statement* scnd): expr(exp), first(frst), second(scnd){};
 	StmtIf(NodeExpr* exp, Statement* frst): expr(exp), first(frst), second(NULL){};
-	int FillTree(int i, int j){ 
-		int j1 = j;
-		j = PaintBranch(i, j, j, j + FillTreeIdentConst(i, j, "if"), true);
-		j = PaintBranch(i, j, j, j + expr->FillTree(i + 4, j), false);
-		j = FillTreeOp(i, j, "then");
-		if (second){
-			j = PaintBranch(i, j, j, j + first->FillTree(i + 4, j), false);
-			j = FillTreeOp(i, j, "else");
-			j += second->FillTree(i + 4, j);
-		}
-		else
-			j +=  first->FillTree(i + 4, j);
-		return j - j1;
-	}
+	int FillTree(int i, int j);
 private:
 	NodeExpr* expr;
 	Statement* first;
 	Statement* second;
 };
-
+int FillTreeWhileRepeat(int i, int j, string s1, string s2, SyntaxNode* node1, SyntaxNode* node2);
 class StmtWhile: public Statement{
 public:
 	StmtWhile(NodeExpr* exp, Statement* b): expr(exp), body(b){};
-	int FillTree(int i, int j){
-		int j1 = j;
-		j = PaintBranch(i, j, j, j + FillTreeIdentConst(i, j, "while"), true);
-		j = PaintBranch(i, j, j, j + expr->FillTree(i + 4, j), false);
-		j = FillTreeOp(i, j, "do");
-		j += body->FillTree(i + 4, j);
-		return j - j1;
-	}
+	int FillTree(int i, int j){ return FillTreeWhileRepeat(i, j, "while", "do", expr, body); }
 private:
 	NodeExpr* expr;
 	Statement* body;
@@ -113,14 +83,7 @@ private:
 class StmtRepeat: public Statement{
 public:
 	StmtRepeat(NodeExpr* exp, Statement* b): expr(exp), body(b){};
-	int FillTree(int i, int j){
-		int j1 = j;
-		j = PaintBranch(i, j, j, j + FillTreeIdentConst(i, j, "repeat"), true);
-		j = PaintBranch(i, j, j, j + body->FillTree(i + 4, j), false);
-		j = FillTreeOp(i, j, "until");
-		j += expr->FillTree(i + 4, j);
-		return j - j1;
-	}
+	int FillTree(int i, int j){ return FillTreeWhileRepeat(i, j, "repeat", "until", body, expr); }
 private:
 	NodeExpr* expr;
 	Statement* body;
@@ -138,20 +101,7 @@ public:
 class StmtFor: public Statement{
 public:
 	StmtFor(Symbol* v, NodeExpr* init, NodeExpr* finit, Statement* b, bool t): var(v), initVal(init), finitVal(finit), body(b), to(t){};
-	int FillTree(int i, int j){
-		int j1 = j;
-		j = PaintBranch(i, j, j, j + FillTreeIdentConst(i, j, "for"), true);
-		Variable* v = new Variable(var, 0, 0);
-		StmtAssign* assign = new StmtAssign(v, initVal);
-		j = PaintBranch(i, j, j, j + assign->FillTree(i + 4, j), false);
-		j = to ? FillTreeOp(i, j, "to") : FillTreeOp(i, j, "downto");
-		j = PaintBranch(i, j, j, j + finitVal->FillTree(i + 4, j), false);
-		j = FillTreeOp(i, j, "do");
-		j += body->FillTree(i + 4, j);
-		delete v;
-		delete assign;
-		return j - j1;
-	}
+	int FillTree(int i, int j);
 private:
 	Symbol* var;
 	NodeExpr* initVal;
@@ -161,15 +111,11 @@ private:
 };
 
 class StmtBreak: public Statement{
-	int FillTree(int i, int j){
-		return FillTreeIdentConst(i, j, "break");
-	}
+	int FillTree(int i, int j){ return FillTreeIdentConst(i, j, "break"); }
 };
 
 class StmtContinue: public Statement{
-	int FillTree(int i, int j){
-		return FillTreeIdentConst(i, j, "continue");
-	}
+	int FillTree(int i, int j){	return FillTreeIdentConst(i, j, "continue"); }
 };
 
 class Const: public NodeExpr{
@@ -236,13 +182,7 @@ private:
 class StmtProcedure: public Statement{
 public:
 	StmtProcedure(Symbol* pr, list<NodeExpr*>* ar): proc(pr), args(ar){};
-	int FillTree(int i, int j){
-		int j1 = j;
-		FunctionCall* func = new FunctionCall(proc, 0, 0, *args);
-		j += func->FillTree(i, j);
-		delete func;
-		return j - j1;
-	}
+	int FillTree(int i, int j);
 private:
 	Symbol* proc;
 	list<NodeExpr*>* args;
@@ -265,16 +205,7 @@ class Parser{
 public:
 	Parser(Scanner& sc, ostream& o);
 	void ParseMainDecl() {ParseDecl(tableStack->begin(), true); }
-	void ParseMainBlock(bool assignment) { 
-		if (TokType() != ttEOF){
-			StmtBlock* st = ParseBlock(tableStack->begin(), true);
-			os << "\n";
-			if (assignment)
-				st->PrintAssignment(os);
-			else			
-				st->Print(os, 0);
-		}
-	}
+	void ParseMainBlock(bool assignment);
 private:
 	void ParseDecl(SymStIt curTable, bool main);
 	NodeExpr* ParseSimple(SymStIt curTable, int prior);
@@ -315,6 +246,8 @@ private:
 	StmtFor* ParseFor(SymStIt curTable);
 	SymTable::iterator FindS(string s, SymStIt curTable, SymStIt end);
 	SymTable::iterator FindS(string s, SymTable* curTable);
+	void TryError(bool f, string mes);
+	void TryError(bool f, string mes, int pos, int line);
 	Scanner& scan;
 	ostream& os;
 	SymTableStack* tableStack;

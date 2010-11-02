@@ -1,4 +1,4 @@
-function FUNC(var (by ref) I : REAL;): REAL;
-var B : REAL;
+function FUNC(var (by ref) I : REAL;): REAL;var B : REAL;
 var I : INTEGER;
+
 15 5 Variable identifier expected

@@ -1,4 +1,5 @@
 var B : record 
     var Y : INTEGER;
 end;
+
 6 3 Invalid array name

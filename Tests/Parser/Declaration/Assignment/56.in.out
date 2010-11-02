@@ -4,4 +4,5 @@ type TREC = record
 end;
 var A : TREC;
 var B : TREC;
+
 10 4 Invalid types in binary operation
