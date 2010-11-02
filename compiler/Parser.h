@@ -237,10 +237,11 @@ class StmtProcedure: public Statement{
 public:
 	StmtProcedure(Symbol* pr, list<NodeExpr*>* ar): proc(pr), args(ar){};
 	int FillTree(int i, int j){
+		int j1 = j;
 		FunctionCall* func = new FunctionCall(proc, 0, 0, *args);
-		j = func->FillTree(i, j);
+		j += func->FillTree(i, j);
 		delete func;
-		return j;
+		return j - j1;
 	}
 private:
 	Symbol* proc;
@@ -263,7 +264,7 @@ string UpCase(string s);
 class Parser{
 public:
 	Parser(Scanner& sc, ostream& o);
-	void ParseMainDecl() {ParseDecl(tableStack->begin()); }
+	void ParseMainDecl() {ParseDecl(tableStack->begin(), true); }
 	void ParseMainBlock(bool assignment) { 
 		if (TokType() != ttEOF){
 			StmtBlock* st = ParseBlock(tableStack->begin(), true);
@@ -275,7 +276,7 @@ public:
 		}
 	}
 private:
-	void ParseDecl(SymStIt curTable);
+	void ParseDecl(SymStIt curTable, bool main);
 	NodeExpr* ParseSimple(SymStIt curTable, int prior);
 	NodeExpr* ParseFactor(SymStIt curTable); 
 	NodeExpr* ParseFunctionCall(NodeExpr* res, int pos, int line);

@@ -1,0 +1,10 @@
+var i, j, k, f: integer;
+r: real;
+procedure proc(m, n: integer);
+begin
+	m := 10;
+end;
+begin
+	if (proc(10, 9))
+		i := 10;
+end.

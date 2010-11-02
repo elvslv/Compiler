@@ -45,6 +45,7 @@ int FindOpPrior(string str){
 }
 
 void ClearArr(){
+	maxN = 0;
 	memset(arr, ' ', arrSize * arrSize);
 }
 

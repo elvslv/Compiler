@@ -4,7 +4,7 @@ var K : INTEGER;
 var F : INTEGER;
 type TT = REAL;
 
-procedure PROC(var M : INTEGER;var N : INTEGER;);
+function PROC(var M : INTEGER;var N : INTEGER;): TT;
 type TT = INTEGER;
 var I : TT;
 var K : TT;
@@ -61,6 +61,12 @@ begin
 |   |___F            
 |   |                
 |   |___K            
+|                    
+|___:=               
+|   |                
+|   |___RESULT       
+|   |                
+|   |___1.25         
 |                    
 end                  
 

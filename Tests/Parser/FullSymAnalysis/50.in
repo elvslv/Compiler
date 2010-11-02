@@ -1,0 +1,10 @@
+var i, j, k, f: integer;
+r: real;
+procedure proc(m, n: integer);
+begin
+	m := 10;
+end;
+begin
+	r := proc(i, j) + 25;
+	proc(i + 7, k);
+end.

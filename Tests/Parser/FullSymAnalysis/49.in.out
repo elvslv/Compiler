@@ -1,0 +1,52 @@
+var I : INTEGER;
+var J : INTEGER;
+var K : INTEGER;
+var F : INTEGER;
+var R : REAL;
+
+function PROC(var M : INTEGER;var N : INTEGER;): REAL;
+
+begin         
+|             
+|___:=        
+|   |         
+|   |___RESULT
+|   |         
+|   |___1.25  
+|             
+end           
+
+
+begin               
+|                   
+|___:=              
+|   |               
+|   |___R           
+|   |               
+|   |___+           
+|       |           
+|       |___()      
+|       |   |       
+|       |   |___PROC
+|       |   |       
+|       |   |___I   
+|       |   |       
+|       |   |___J   
+|       |           
+|       |___ItoR    
+|           |       
+|           |___25  
+|                   
+|___()              
+|   |               
+|   |___PROC        
+|   |               
+|   |___+           
+|   |   |           
+|   |   |___I       
+|   |   |           
+|   |   |___7       
+|   |               
+|   |___K           
+|                   
+end                 

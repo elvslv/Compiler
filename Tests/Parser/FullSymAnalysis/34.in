@@ -2,7 +2,7 @@ var i, j: integer;
 r: real;
 function func(i: integer): integer;
 begin
-	func := i;
+	result := i;
 end;
 begin
 	while func(i) do

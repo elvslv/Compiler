@@ -5,4 +5,26 @@ var A : record
     var X : MY_INT;
 end;
 
-9 5 Condition must be integer
+begin            
+|                
+|___if           
+|   |            
+|   |___.        
+|   |   |        
+|   |   |___A    
+|   |   |        
+|   |   |___X    
+|   |            
+|   then         
+|   |            
+|   |___begin    
+|       |        
+|       |___:=   
+|       |   |    
+|       |   |___I
+|       |   |    
+|       |   |___J
+|       |        
+|       end      
+|                
+end              

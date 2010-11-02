@@ -3,15 +3,15 @@ var J : INTEGER;
 
 function FUNC(var I : INTEGER;): INTEGER;
 
-begin       
-|           
-|___:=      
-|   |       
-|   |___FUNC
-|   |       
-|   |___I   
-|           
-end         
+begin         
+|             
+|___:=        
+|   |         
+|   |___RESULT
+|   |         
+|   |___I     
+|             
+end           
 
 
 begin            

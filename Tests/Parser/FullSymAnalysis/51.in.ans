@@ -1,0 +1,20 @@
+var I : INTEGER;
+var J : INTEGER;
+var K : INTEGER;
+var F : INTEGER;
+var R : REAL;
+
+procedure PROC(var M : INTEGER;var N : INTEGER;);
+
+begin     
+|         
+|___:=    
+|   |     
+|   |___M 
+|   |     
+|   |___10
+|         
+end       
+
+
+20 8 Variable must be typed

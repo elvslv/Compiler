@@ -1,0 +1,18 @@
+var i, j, k, f: integer;
+type tt = real;
+function proc(m, n: integer): integer;
+type tt = integer;
+var i, k: tt;
+const m = 12;
+begin
+	if m then
+		n := 7;
+	for i := 1 to m do
+		k := k + 1;
+	f := k;
+	result := 1.25;
+end;
+begin
+	proc(i, j);
+	proc(i + 7, k);
+end.

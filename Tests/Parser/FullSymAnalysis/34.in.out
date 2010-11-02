@@ -4,15 +4,41 @@ var R : REAL;
 
 function FUNC(var I : INTEGER;): INTEGER;
 
-begin       
-|           
-|___:=      
-|   |       
-|   |___FUNC
-|   |       
-|   |___I   
-|           
-end         
+begin         
+|             
+|___:=        
+|   |         
+|   |___RESULT
+|   |         
+|   |___I     
+|             
+end           
 
 
-15 8 Lexem expected, EOF found
+begin                
+|                    
+|___while            
+|   |                
+|   |___()           
+|   |   |            
+|   |   |___FUNC     
+|   |   |            
+|   |   |___I        
+|   |                
+|   do               
+|   |                
+|   |___begin        
+|       |            
+|       |___:=       
+|       |   |        
+|       |   |___I    
+|       |   |        
+|       |   |___+    
+|       |       |    
+|       |       |___I
+|       |       |    
+|       |       |___1
+|       |            
+|       end          
+|                    
+end                  

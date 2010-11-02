@@ -1,0 +1,9 @@
+var i, j, k, f: integer;
+function proc(m, n: integer): real;
+begin
+	result = 1.25;
+end;
+begin
+	proc(i, j);
+	proc(i + 7, k);
+end.

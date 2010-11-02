@@ -90,7 +90,7 @@ void Parser::CheckEof(){
 	if (TokType() == ttEOF)
 		throw Error("Unexpected end of file", TokPos(), TokLine());
 }
-void Parser::ParseDecl(SymStIt curTable){
+void Parser::ParseDecl(SymStIt curTable, bool main){
 	TokenType tt = TokType();
 	while (tt == ttType || tt == ttVar || tt == ttConst || tt == ttProcedure || tt == ttFunction){
 		scan.Next();
@@ -104,11 +104,11 @@ void Parser::ParseDecl(SymStIt curTable){
 		case ttConst:
 			ParseTypeConstBlock(curTable, ttConst);
 			break;
-		case ttProcedure:
-			ParseProcedure(curTable, true, false);
+		case ttProcedure: case ttFunction:
+			if (!main)
+				throw Error("Embedded procedures are not allowed", TokPos(), TokLine());
+			tt == ttProcedure ? ParseProcedure(curTable, true, false) : ParseProcedure(curTable, true, true);
 			break;
-		case ttFunction:
-			ParseProcedure(curTable, true, true);
 		}
 		tt = TokType();
 	}
@@ -408,9 +408,11 @@ Symbol* Parser::ParseProcedure(SymStIt curTable, bool newProc, bool func){
 	StmtBlock* body = NULL;
 	res = func ? (SymProc*)new SymFunc(ident, argTable, locals, arg_names, body, type) : new SymProc(ident, argTable, locals, arg_names, body);
 	if (func){
-		SymVarLocal* var = new SymVarLocal(ident, type);
-		locals->insert(Sym(ident, var));
+		SymVarLocal* var = new SymVarLocal("RESULT", type);
+		locals->insert(Sym("RESULT", var));
 	}
+	if (newProc)
+		(**curTable)[ident] = res;
 	if (TokType() != ttForward){
 		os << "\n";
 		SymStIt it;
@@ -418,7 +420,7 @@ Symbol* Parser::ParseProcedure(SymStIt curTable, bool newProc, bool func){
 			it = i;
 		res->Print(os, false);
 		os << "\n";
-		ParseDecl(it);
+		ParseDecl(it, false);
 		body = ParseBlock(it, false);
 		res->SetBody(body);
 		res->PrintBody(os);
@@ -430,8 +432,6 @@ Symbol* Parser::ParseProcedure(SymStIt curTable, bool newProc, bool func){
 	}
 	tableStack->pop_back();
 	tableStack->pop_back();
-	if (newProc)
-		(**curTable)[ident] = res;
 	scan.Next();
 	return res;
 }
@@ -646,20 +646,19 @@ int FunctionCall::FillTree(int i, int j){
 	if (i + 4 > maxLength)
 		maxLength = i + 4;
 	j = PaintBranch(i, j, j, j + FillTreeIdentConst(i + 4, j, GetValue()) - 2, false);
-	int s = 0;
-	int h = 0;
+	int j1 = j;
 	for (list<NodeExpr*>::iterator it = args.begin() ;it != args.end(); ++it){
-		h = (*it)->FillTree(i + 4, j + 2);
-		j = PaintBranch(i, j, 0, 2, true);
-		s += h;
+		PaintBranch(i, j1, 0,  j - j1 + 2, true);
+		j1 = j;
+		j += (*it)->FillTree(i + 4, j + 2);
 	}
-	return max(s - tmp + 2, j - tmp + 2);
+	return j - tmp + 2;
 }
 
 int UnaryOp::FillTree(int i, int j){
 	j = FillTreeOp(i, j, GetValue());
 	int h = child->FillTree(i + 4, j);
-	return j + h + 2;
+	return h + 2;
 }
 
 int FillTreeBinOp(int i, int j, string Value, NodeExpr* left, NodeExpr* right){
@@ -685,6 +684,8 @@ StmtAssign* Parser::ParseAssignment(SymStIt curTable){
 		if (!(t1 && t2 && (EqTypes((SymType*)t1, (SymType*)t2) || IToR((SymType*)t1,(SymType*) t2))))
 			throw Error("Incompatible types in assignment", lExpr->GetPos(), lExpr->GetLine());
 	}
+	else
+		throw Error("Illegal expression", TokPos(), TokLine());
 	//os << "\n";
 	//expr->Print(os, 0);
 	return new StmtAssign(res->GetLeft(), res->GetRight());
@@ -704,6 +705,10 @@ NodeExpr* Parser::ParseSimple(SymStIt curTable, int prior){
 		NodeExpr* expr1 = ParseSimple(curTable, prior - 1);
 		if (!expr1)
 			throw Error("Lexem expected, EOF found", TokPos(), TokLine());
+		if (!res->GetType())
+			throw Error("Variable must be typed", pos, line);
+		if (!expr1->GetType())
+			throw Error("Variable must be typed", TokPos(), TokLine());
 		if (expr1->IsInt() && (((SymType*)res->GetType())->IsScalar() && !res->IsInt())){
 			expr1 = new UnaryOp(new Symbol("ItoR"), pos, line, expr1);
 			expr1->SetType((SymType*)((**lowerTable)["REAL"]));
@@ -762,7 +767,8 @@ NodeExpr* Parser::ParseVariable(SymStIt curTable, NodeExpr* res){
 		s = res->GetValue();
 		var = new SymVar(res->GetSymbol()->GetName(), (SymType*)res->GetType());
 	}
-	SymType* type = var->GetType();
+	if (!var->GetType())
+		throw Error("Variable must be typed", pos, line);
 	if (!var->GetType()->IsArray() && !var->GetType()->IsRecord() && !var->IsFunc())
 			res = new Variable(var, pos, line);
 	else
@@ -789,8 +795,7 @@ NodeExpr* Parser::ParseVariable(SymStIt curTable, NodeExpr* res){
 			pos = TokPos();
 			line = TokLine();
 		}
-	type = var->GetType();
-	res->SetType(type);
+	res->SetType(var->GetType());
 	return res;
 }
 
@@ -882,7 +887,8 @@ FunctionCall* Parser::ParseFunc(SymStIt curTable, NodeExpr* res, Symbol** var, i
 	if (!type)
 		nextScan = false;
 	res = new FunctionCall(*var, pos, line, args);
-	*var = new SymVar(toString(id++), type);
+	if (type)
+		*var = new SymVar(toString(id++), type);
 	res->SetType(type);
 	return (FunctionCall*)res;
 }

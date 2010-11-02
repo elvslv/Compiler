@@ -3,15 +3,45 @@ var J : INTEGER;
 
 function FUNC(var I : INTEGER;): INTEGER;
 
-begin       
-|           
-|___:=      
-|   |       
-|   |___FUNC
-|   |       
-|   |___I   
-|           
-end         
+begin         
+|             
+|___:=        
+|   |         
+|   |___RESULT
+|   |         
+|   |___I     
+|             
+end           
 
 
-27 7 Lexem expected, EOF found
+begin            
+|                
+|___for          
+|   |            
+|   |___:=       
+|   |   |        
+|   |   |___I    
+|   |   |        
+|   |   |___1    
+|   |            
+|   to           
+|   |            
+|   |___()       
+|   |   |        
+|   |   |___FUNC 
+|   |   |        
+|   |   |___10   
+|   |            
+|   do           
+|   |            
+|   |___begin    
+|       |        
+|       |___:=   
+|       |   |    
+|       |   |___J
+|       |   |    
+|       |   |___5
+|       |        
+|       end      
+|                
+end              
