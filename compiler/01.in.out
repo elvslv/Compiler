@@ -1,4 +1,5 @@
 .686
+.model flat,stdcall
 include     include\msvcrt.inc
 include include\kernel32.inc
 include include\fpu.inc
@@ -6,23 +7,39 @@ include include\user32.inc
 includelib  lib\msvcrt.lib
 includelib lib\user32.lib
 includelib lib\kernel32.lib
-includelib lib\fpu.lib
 .data
-I dw 0
-J dw 0
+	G_I dd 0
+	G_J dd 0
+	G_writef db "%d", 0
+	G_writelnf db "%d", 10
 .code
 main:
-push I
-push 5
-pop EAX
-mov [ebp + 0], EAX
-push J
-push I
-push 17
-pop EBX
-pop EAX
-add EAX, EBX
-push EAX
-pop EAX
-mov [ebp + 0], EAX
+	push G_I
+	push 5
+	pop EAX
+	mov G_I, EAX
+	push G_J
+	push G_I
+	push 17
+	pop EBX
+	pop EAX
+	add EAX, EBX
+	push EAX
+	pop EAX
+	mov G_J, EAX
+	push G_I
+	push G_J
+	push 5
+	pop EBX
+	pop EAX
+	imul EAX, EBX
+	push EAX
+	pop EBX
+	pop EAX
+	add EAX, EBX
+	push EAX
+	pop EAX
+	invoke crt_printf, addr G_writelnf, EAX
+	invoke crt_scanf, addr G_writef
+	invoke ExitProcess, 0
 end main

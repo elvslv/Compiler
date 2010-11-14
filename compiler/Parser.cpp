@@ -1,7 +1,8 @@
 #include "Parser.h"
 #include "Symbols.h"
-
+static bool writeln = false;
 static int id = 0;
+AsmMem* mem(string name){ return new AsmMem("G_" + name); }
 void Parser::PrintTable(){
 	SymTable* tbl = *lowerTable;
 	for (SymTable::iterator it = tbl->begin(); it != tbl->end(); ++it){
@@ -14,8 +15,7 @@ void Parser::PrintTable(){
 	}
 }
 void Parser::Generate(){
-	AsmProc* curProc = Asm->AddProc("data", false, true);
-	curProc->Add(asmData);
+	AsmProc* curProc = Asm->AddProc(".data", pData);
 	SymTable* tbl = *lowerTable;
 	for (SymTable::iterator it = tbl->begin(); it != tbl->end(); ++it){
 		if (it->second->GetName() == "INTEGER" || it->second->GetName() == "REAL" || it->second->GetName() == "STRING")
@@ -23,24 +23,31 @@ void Parser::Generate(){
 		if (!it->second->IsProc())
 			it->second->Generate(curProc);
 	}
-	curProc = Asm->AddProc("code", false, true);
-	curProc->Add(asmCode);
+	curProc->Add(asmDb, mem("writef"), new AsmImmString("\"%d\", 0"));
+	if (writeln)
+		curProc->Add(asmDb, mem("writelnf"), new AsmImmString("\"%d\", 10"));
+	curProc = Asm->AddProc(".code", pCode);
 	for (SymTable::iterator it = tbl->begin(); it != tbl->end(); ++it){
 		if (!it->second->IsProc() || it->second->GetName() == "INTEGER" || it->second->GetName() == "REAL" || it->second->GetName() == "STRING")
 			continue;
-		curProc = Asm->AddProc(it->second->GetName(), false, false);
+		curProc = Asm->AddProc(it->second->GetName(), pProc);
 		it->second->Generate(curProc);
 	}
-	curProc = Asm->AddProc("main", true, false);
+	curProc = Asm->AddProc("main", pMain);
 	program->Generate(curProc);
 }
 void SymVar::Generate(AsmProc* Asm){
-	Asm->Add(asmDw, new AsmMem(name));
+	Asm->Add(asmDd, mem(name));
 }
 void SymVarConst::Generate(AsmProc* Asm){
-	Asm->Add(asmDw, new AsmMem(name), new AsmMem(ToString()));
+	if (IsInt())
+		Asm->Add(asmDd, mem(name), new AsmImmInt(((SymVarConstInt*)this)->GetValue()));
+	if (IsReal())
+		Asm->Add(asmDd, mem(name), new AsmImmReal(((SymVarConstReal*)this)->GetValue()));
+	if (IsString())
+		Asm->Add(asmDd, mem(name), new AsmImmString(((SymVarConstString*)this)->GetValue()));
 }
-void Variable::Generate(AsmProc* Asm){ Asm->Add(asmPush, new AsmMem(symbol->GetName())); }
+void Variable::Generate(AsmProc* Asm){ Asm->Add(asmPush, mem(symbol->GetName())); }
 void Const::Generate(AsmProc* Asm){
 	if (UnnamedSymb(symbol)){
 		if (IsInt())
@@ -51,7 +58,7 @@ void Const::Generate(AsmProc* Asm){
 			Asm->Add(asmPush, new AsmImmString(((SymVarConstString*)symbol)->GetValue()));
 	}
 	else
-		Asm->Add(asmPush, new AsmMem(symbol->GetName()));
+		Asm->Add(asmPush, mem(symbol->GetName()));
 }
 void BinaryOp::Generate(AsmProc* Asm){
 	string op = symbol->GetName();
@@ -87,6 +94,11 @@ void UnaryOp::Generate(AsmProc* Asm){
 		Asm->Add(asmIMul, new AsmImmInt(-1));
 		Asm->Add(asmPush, eax);
 	}
+}
+void StmtWrite::Generate(AsmProc* Asm){
+	expr->Generate(Asm);
+	Asm->Add(asmPop, eax);
+	Asm->Add(asmPrintf, writeln ? mem("writelnf") : mem("writef"), eax);
 }
 bool UnnamedType(SymType* type){ return type && type->GetName()[0] >= '0' && type->GetName()[0] <= '9'; }
 bool UnnamedSymb(Symbol* symb){ return symb->GetName()[0] >= '0' && symb->GetName()[0] <= '9'; }
@@ -205,9 +217,9 @@ void FillMaps(){
 	cmdNames[asmMov] = "mov"; cmdNames[asmAdd] = "add"; cmdNames[asmSub] = "sub";
 	cmdNames[asmDiv] = "div"; cmdNames[asmMul] = "mul"; cmdNames[asmIDiv] = "idiv"; 
 	cmdNames[asmIMul] = "imul"; cmdNames[asmPush] = "push"; cmdNames[asmPop] = "pop"; 
-	cmdNames[asmCmp] = "cmp"; cmdNames[asmJmp] = "jmp"; cmdNames[asmDw] = "dw"; 
+	cmdNames[asmCmp] = "cmp"; cmdNames[asmJmp] = "jmp"; cmdNames[asmDw] = "dw"; cmdNames[asmDd] = "dd"; 
 	cmdNames[asmDb] = "db"; cmdNames[asmUnknown] = "?";cmdNames[asmCode] = ".code";
-	cmdNames[asmData] = ".data";
+	cmdNames[asmData] = ".data"; cmdNames[asmScanf] = "crt_scanf"; cmdNames[asmPrintf] = "crt_printf";
 }
 int FindOpPrior(string str){
 	map<string, int>::iterator it;
@@ -322,6 +334,9 @@ Statement* Parser::ParseStatement(SymStIt curTable){
 			case ttBegin:
 				res = ParseBlock(curTable, false);
 				break;
+			case ttWrite: case ttWriteln:
+				res = ParseWrite(curTable, TokType() == ttWriteln);
+				break;
 			default:
 				throw Error("Unexpected keyword found", TokPos(), TokLine());				
 		}
@@ -385,6 +400,12 @@ StmtRepeat* Parser::ParseRepeat(SymStIt curTable){
 	NodeExpr* expr = ParseNext(curTable);
 	TryError(!expr->IsInt(), "Condition must be integer");
 	return new StmtRepeat(expr, body);
+}
+StmtWrite* Parser::ParseWrite(SymStIt curTable, bool w){
+	if(w) 
+		writeln = true;
+	NodeExpr* expr = ParseNext(curTable);
+	return new StmtWrite(expr, w);
 }
 StmtProcedure* Parser::ParseProcedure(SymStIt curTable){
 	NodeExpr* expr =  ParseSimple(curTable, 5);
@@ -526,9 +547,6 @@ Symbol* Parser::ParseProcedure(SymStIt curTable, bool newProc, bool func){
 	}
 	if (newProc)
 		(**curTable)[ident] = res;
-	/*if (TokType() != ttForward)
-		os << "\n";
-	res->Print(os, false);*/
 	if (TokType() != ttForward){
 		SymStIt it;
 		for (SymStIt i = tableStack->begin(); i != tableStack->end(); ++i)
@@ -536,8 +554,6 @@ Symbol* Parser::ParseProcedure(SymStIt curTable, bool newProc, bool func){
 		ParseDecl(it, false);
 		body = ParseBlock(it, false);
 		res->SetBody(body);
-		/*res->PrintBody(os);
-		os << "\n";*/
 	}else {
 		CheckEof();
 		SmthExpexted(TokVal(), TokPos(), TokLine(), ";");
@@ -569,10 +585,6 @@ SymTable* Parser::ParseVarRecordBlock(SymStIt curTable, TokenType tt){
 				TryError(it != curTbl->end(), "Identifier already declared");
 				SymVar* v = (tt == ttVar) ? (SymVar*)new SymVarGlobal(*it1, type) : (SymVar*)new SymVarLocal(*it1, type);
 				(*curTbl)[*it1] = v;
-				/*if (tt == ttVar){
-					v->Print(os, UnnamedType(type));
-					os << "\n";
-				}*/
 			}
 			idents.clear();
 			SmthExpexted(TokVal(), TokPos(), TokLine(), ";");
@@ -636,16 +648,13 @@ void Parser::ParseTypeConstBlock(SymStIt curTable, TokenType tt){
 			res = ParseType(curTable, true);
 			CheckEof();
 			res->SetName(ident);
-			//res->Print(os, true);
 		}
 		else{
 			curIdent = ident;
 			res = ParseConst(curTable, true);
 			CheckEof();
 			curIdent = "";
-			//res->Print(os, true);
 		}
-		//os << ";\n";
 		(**curTable)[ident] = res;
 		SmthExpexted(TokVal(), TokPos(), TokLine(), ";");
 		scan.Next();
@@ -727,6 +736,16 @@ Symbol* Parser::ParseArray(SymStIt curTable){
 		type = res;
 	}
 	return res;
+}
+int StmtWrite::FillTree(int i, int j){
+	int j1 = j;
+	unsigned int k = 0;
+	int tmp = j;
+	j = writeln ? FillTreeOp(i, j, "writeln") : FillTreeOp(i, j, "write");
+	if (i + 4 > maxLength)
+		maxLength = i + 4;
+	j = expr->FillTree(i + 4, j);
+	return j + 2;
 }
 int FunctionCall::FillTree(int i, int j){
 	unsigned int k = 0;

@@ -157,8 +157,9 @@ public:
 	virtual void Print(ostream& os, bool f);
 	virtual void PrintVal(ostream& os) = 0;
 	bool IsConst() {return true; }
-	virtual bool IsInt() = 0;
-	virtual bool IsReal() = 0;
+	virtual bool IsInt() { return false; }
+	virtual bool IsReal() { return false; }
+	virtual bool IsString() {return false; }
 	virtual void Generate(AsmProc* Asm); 
 	virtual string ToString() = 0;
 };
@@ -169,8 +170,6 @@ public:
 	int GetValue() {return val; }
 	void PrintVal(ostream& os) {os << val; }
 	bool IsInt() {return true; }
-	bool IsReal() {return false; }
-	bool IsString() {return false; }
 	string ToString () { return toString(val); }
 private:
 	int val;
@@ -184,9 +183,7 @@ public:
 		os.precision(10);
 		os << val; 
 	}
-	bool IsInt() {return false; }
 	bool IsReal() {return true; }
-	bool IsString() {return false; }
 	string ToString () { return toString(val); }
 private:
 	double val;
@@ -197,9 +194,7 @@ public:
 	SymVarConstString(string s, SymType* t, string v): SymVarConst(s, t), val(v){};
 	string GetValue() {return val; }
 	void PrintVal(ostream& os) { os << val; }
-	bool IsInt() {return false; }
-	bool IsReal() {return false; }
-	bool IsString() {return true; }
+	bool IsString() { return true; }
 	string ToString () { return val; }
 private:
 	string val;

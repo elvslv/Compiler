@@ -14,6 +14,7 @@ static AsmReg* edi = new AsmReg("EDI");
 static AsmReg* ebp = new AsmReg("EBP");
 static AsmReg* esp = new AsmReg("ESP");
 bool UnnamedSymb(Symbol* symb);
+AsmMem* mem(string name);
 class Parser;
 class SyntaxNode{
 public:
@@ -63,7 +64,7 @@ public:
 		left->Generate(Asm);
 		right->Generate(Asm);
 		Asm->Add(asmPop, eax);
-		Asm->Add(asmMov, new AsmStackVal(0), eax);
+		Asm->Add(asmMov, mem(left->GetValue()), eax);
 	};
 private:
 	NodeExpr* left;
@@ -110,6 +111,16 @@ public:
 private:
 	NodeExpr* expr;
 	Statement* body;
+};
+
+class StmtWrite: public Statement{
+public:
+	StmtWrite(NodeExpr* exp, bool w):expr(exp), writeln(w){};
+	int FillTree(int i, int j);
+	void Generate(AsmProc* Asm);
+private:
+	NodeExpr* expr;
+	bool writeln;
 };
 
 class Variable: public NodeExpr{
@@ -271,6 +282,7 @@ private:
 	int TokLine() {return scan.GetToken()->GetLine();}
 	string CheckCurTok(SymStIt curTable, string blockName, SymTable* tbl);
 	void CheckProcDecl();
+	StmtWrite* Parser::ParseWrite(SymStIt curTable, bool writeln);
 	StmtWhile* ParseWhile(SymStIt curTable);
 	StmtAssign* ParseAssignment(SymStIt curTable);
 	StmtProcedure* ParseProcedure(SymStIt curTable);

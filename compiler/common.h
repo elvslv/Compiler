@@ -163,9 +163,19 @@ enum cmd{
 	asmJmp, 
 	asmDw,
 	asmDb,
+	asmDd,
 	asmUnknown,
 	asmCode, 
 	asmData,
+	asmInvoke,
+	asmPrintf, 
+	asmScanf,
+};
+enum procType{
+	pMain,
+	pProc,
+	pData,
+	pCode,
 };
 static map<cmd, string> cmdNames;
 class Error 

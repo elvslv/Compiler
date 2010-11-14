@@ -11,7 +11,7 @@
 			<DebugSettings
 				Command="$(TargetPath)"
 				WorkingDirectory=""
-				CommandArguments="01.in -symt"
+				CommandArguments="01.in -gen"
 				Attach="false"
 				DebuggerType="3"
 				Remote="1"
