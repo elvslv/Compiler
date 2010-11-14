@@ -13,4 +13,7 @@ type T1 = record
     var B : INT;
 end;
 type T2 = array [const 1..const 20] of array [const 10..const 15] of REAL;
-function TRRR: INTEGER;function TRRRR(var (by ref) A : INTEGER;var B : REAL;): REAL;procedure PROC;procedure PROC1(var (by ref) F : REAL;var I : INTEGER;var (by ref) M : REAL;);
+function TRRR: INTEGER;
+function TRRRR(var (by ref) A : INTEGER;var B : REAL;): REAL;
+procedure PROC;
+procedure PROC1(var (by ref) F : REAL;var I : INTEGER;var (by ref) M : REAL;);

@@ -1,7 +1,7 @@
 var I : INTEGER;
 var J : INTEGER;
-var N : INTEGER;
-var L : INTEGER;
 var K : INTEGER;
+var L : INTEGER;
+var N : INTEGER;
 
 18 3 Init expression must be integer

@@ -1,0 +1,9 @@
+var i, j: integer;
+procedure func(i: integer);
+begin
+i := i;
+end;
+begin
+for i := func(1) to func(5) do
+	j := j + 1;
+end.

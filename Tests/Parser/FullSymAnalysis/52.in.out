@@ -1,9 +1,2 @@
-var I : INTEGER;
-var J : INTEGER;
-var K : INTEGER;
-var F : INTEGER;
-var R : REAL;
-
-procedure PROC(var M : INTEGER;var N : INTEGER;);
 
 11 4 Embedded procedures are not allowed

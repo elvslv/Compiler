@@ -1,9 +1,20 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
+#include "CodeGen.h"
 #include "Scanner.h"
+#include "common.h"
 using namespace std;
-
+static AsmReg* eax = new AsmReg("EAX");
+static AsmReg* ebx = new AsmReg("EBX");
+static AsmReg* ecx = new AsmReg("ECX");
+static AsmReg* edx = new AsmReg("EDX");
+static AsmReg* esi = new AsmReg("ESI");
+static AsmReg* edi = new AsmReg("EDI");
+static AsmReg* ebp = new AsmReg("EBP");
+static AsmReg* esp = new AsmReg("ESP");
+bool UnnamedSymb(Symbol* symb);
+class Parser;
 class SyntaxNode{
 public:
 	virtual int FillTree(int i, int j) = 0;
@@ -12,6 +23,7 @@ public:
 		int h = FillTree(0, 0) - 1;
 		PrintExpr(os, h);
 	}
+	virtual void Generate(AsmProc* Asm){return;}
 };
 
 class NodeExpr: public SyntaxNode{
@@ -30,6 +42,7 @@ public:
 	Symbol* GetSymbol() {return symbol; }
 	int GetPos() {return pos;}
 	int GetLine() {return line;}
+	virtual void Generate(AsmProc* Asm){};
 protected:
 	Symbol* symbol;
 	Symbol* type;
@@ -46,6 +59,12 @@ class StmtAssign: public Statement{
 public:
 	StmtAssign(NodeExpr* l, NodeExpr* r): left(l), right(r){};
 	int FillTree(int i, int j){ return FillTreeBinOp(i, j, ":=", left, right);}
+	void Generate(AsmProc* Asm){
+		left->Generate(Asm);
+		right->Generate(Asm);
+		Asm->Add(asmPop, eax);
+		Asm->Add(asmMov, new AsmStackVal(0), eax);
+	};
 private:
 	NodeExpr* left;
 	NodeExpr* right;
@@ -56,6 +75,10 @@ public:
 	StmtBlock(list<Statement*> stmts): statements(stmts){};
 	int FillTree(int i, int j);
 	void PrintAssignment(ostream& os){(*(statements.begin()))->Print(os, 0);}
+	void Generate(AsmProc* Asm){
+		for (list<Statement*>::iterator it = statements.begin(); it != statements.end(); ++it)
+			(*it)->Generate(Asm);
+	}
 private:
 	list<Statement*> statements;
 };
@@ -96,6 +119,7 @@ public:
 	bool IsInt();
 	bool IsReal();
 	int FillTree(int i, int j){ return FillTreeIdentConst(i, j, GetValue());}
+	void Generate(AsmProc* Asm);
 };
 
 class StmtFor: public Statement{
@@ -126,6 +150,7 @@ public:
 	bool IsReal();
 	bool IsConst() {return true; }
 	int FillTree(int i, int j) { return FillTreeIdentConst(i, j, GetValue());}
+	void Generate(AsmProc* Asm);
 };
 
 int FillTreeBinOp(int i, int j, string Value, NodeExpr* left, NodeExpr* right);
@@ -139,6 +164,7 @@ public:
 	NodeExpr* GetLeft() {return left;}
 	NodeExpr* GetRight() {return right;}
 	int FillTree(int i, int j){ return FillTreeBinOp(i, j, GetValue(), left, right);}
+	void Generate(AsmProc* Asm);
 protected:
 	NodeExpr* right;
 	NodeExpr* left;
@@ -195,6 +221,7 @@ public:
 	bool LValue() {return false; }
 	bool IsInt();
 	bool IsReal();
+	void Generate(AsmProc* Asm);
 private:
 	NodeExpr* child;
 };
@@ -205,7 +232,14 @@ class Parser{
 public:
 	Parser(Scanner& sc, ostream& o);
 	void ParseMainDecl() {ParseDecl(tableStack->begin(), true); }
-	void ParseMainBlock(bool assignment);
+	void ParseMainBlock();
+	void Print(bool assignment){
+		os << "\n";
+		assignment ? program->PrintAssignment(os) : program->Print(os, 0);
+	}
+	void PrintTable();
+	void Generate();
+	void AsmCodePrint(){ Asm->Print(os); };
 private:
 	void ParseDecl(SymStIt curTable, bool main);
 	NodeExpr* ParseSimple(SymStIt curTable, int prior);
@@ -251,7 +285,9 @@ private:
 	Scanner& scan;
 	ostream& os;
 	SymTableStack* tableStack;
+	StmtBlock* program;
 	SymStIt lowerTable;
+	AsmCode* Asm;
 	string curIdent;
 	bool isRecord;
 	bool isAccess;

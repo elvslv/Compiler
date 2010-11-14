@@ -1,4 +1,5 @@
-function FUNC(var I : INTEGER;var J : REAL;): INTEGER;var A : REAL;
+function FUNC(var I : INTEGER;var J : REAL;): INTEGER;
+var A : REAL;
 var J : REAL;
 var I : INTEGER;
 

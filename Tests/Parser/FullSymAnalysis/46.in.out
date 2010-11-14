@@ -1,13 +1,2 @@
-var I : INTEGER;
-var J : INTEGER;
-var K : INTEGER;
-var F : INTEGER;
-type TT = REAL;
-
-function PROC(var M : INTEGER;var N : INTEGER;): INTEGER;
-type TT = INTEGER;
-var I : TT;
-var K : TT;
-const M = 12;
 
 5 13 Incompatible types in assignment

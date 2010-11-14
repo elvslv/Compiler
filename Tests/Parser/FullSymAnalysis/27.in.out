@@ -1,9 +1,9 @@
+var ARR : array [const 1..const 10] of INTEGER;
 var I : INTEGER;
 var J : INTEGER;
-var N : INTEGER;
-var L : INTEGER;
 var K : INTEGER;
-var ARR : array [const 1..const 10] of INTEGER;
+var L : INTEGER;
 const M = 18;
+var N : INTEGER;
 
 9 5 Illegal counter variable

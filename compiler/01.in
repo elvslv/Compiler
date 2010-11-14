@@ -1,1 +1,5 @@
-function func: integer; forward;
+var i, j: integer;
+begin
+	i := 5;
+	j := i + 17;
+end.

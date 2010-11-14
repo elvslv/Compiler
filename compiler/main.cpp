@@ -13,6 +13,7 @@ int main(int argc, char* argv[])
 		cout << "-syn Print syntax tree\n";
 		cout << "-sym Print symbols table\n";
 		cout << "-symt Print symbols table and tree\n";
+		cout << "-gen Generate asm code\n";
 	}
 	else
 	{
@@ -31,6 +32,7 @@ int main(int argc, char* argv[])
 					bool fsyn = false;
 					bool fsym = false;
 					bool fsymt = false;
+					bool fgen = false;
 					for (int i = 2; i < argc; ++i){
 						if (strcmp(argv[i], "-lex") == 0)
 							flex = true;
@@ -39,7 +41,9 @@ int main(int argc, char* argv[])
 						if (strcmp(argv[i], "-sym") == 0)
 							fsym = true;
 						if (strcmp(argv[i], "-symt") == 0)
-							fsymt = true;					
+							fsymt = true;	
+						if (strcmp(argv[i], "-gen") == 0)
+							fgen = true;	
 					}
 					if (flex){
 						while(scanner.GetToken()->GetType() != ttBadToken && scanner.GetToken()->GetType() != ttEOF)
@@ -62,10 +66,20 @@ int main(int argc, char* argv[])
 					if (fsym || fsymt){
 						Parser parser(scanner, os);
 						parser.ParseMainDecl();
+						parser.PrintTable();
+						parser.ParseMainBlock();
 						if (fsym)
-							parser.ParseMainBlock(true);
+							parser.Print(true);
 						else
-							parser.ParseMainBlock(false);
+							parser.Print(false);
+						int i = 0;
+					}
+					if (fgen){
+						Parser parser(scanner, os);
+						parser.ParseMainDecl();
+						parser.ParseMainBlock();
+						parser.Generate();
+						parser.AsmCodePrint();
 						int i = 0;
 					}
 					is.close();

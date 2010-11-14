@@ -3,4 +3,5 @@ type RR = record
     var N : REAL;
 end;
 var A : RR;
+
 11 5 Invalid lexem in constant declaration

@@ -1,6 +1,7 @@
 var I : INTEGER;
 var J : INTEGER;
 type MY_INT = INTEGER;
+function FUNC(var I : INTEGER;): MY_INT;
 
 begin            
 |                

@@ -136,6 +136,7 @@ public:
 	StringLiteral(int pos, int line, string val) : Literal(pos, line, val){};
 	TokenType GetType() {return ttStringLit; }
 	string GetTypeName(){return "String Literal";}
+	string GetVal() {return Value; }
 };
 
 class Operation: public Token

@@ -1,8 +1,8 @@
 var I : INTEGER;
 var J : INTEGER;
-var N : INTEGER;
-var L : INTEGER;
 var K : INTEGER;
+var L : INTEGER;
+var N : INTEGER;
 var R : REAL;
 
 9 4 Loop variable must be integer

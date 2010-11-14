@@ -1,0 +1,9 @@
+var i, j: integer;
+procedure func(i: integer);
+begin
+i := i;
+end;
+begin
+while func(j) do
+j := j + 1;
+end.

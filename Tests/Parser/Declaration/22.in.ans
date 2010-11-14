@@ -2,4 +2,5 @@ const T = 12.3456;
 var A : record 
     var A : INTEGER;
 end;
+
 34 3 Invalid type

@@ -1,8 +1,4 @@
-var I : INTEGER;
-var J : INTEGER;
-
 function FUNC(var I : INTEGER;): INTEGER;
-
 begin         
 |             
 |___:=        
@@ -13,6 +9,8 @@ begin
 |             
 end           
 
+var I : INTEGER;
+var J : INTEGER;
 
 begin            
 |                

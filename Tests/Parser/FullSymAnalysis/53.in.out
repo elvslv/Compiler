@@ -1,13 +1,7 @@
 var I : INTEGER;
 var J : INTEGER;
 var N : INTEGER;
-var S : REAL;
-var TMP : REAL;
-
 procedure REC(var L : INTEGER;var NUM : INTEGER;var S : REAL;);
-var J : INTEGER;
-var S1 : REAL;
-
 begin                                
 |                                    
 |___for                              
@@ -146,6 +140,8 @@ begin
 |                                    
 end                                  
 
+var S : REAL;
+var TMP : REAL;
 
 begin                                
 |                                    

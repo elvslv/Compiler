@@ -1,0 +1,17 @@
+var I : INTEGER;
+var J : INTEGER;
+
+procedure FUNC(var I : INTEGER;);
+
+begin    
+|        
+|___:=   
+|   |    
+|   |___I
+|   |    
+|   |___I
+|        
+end      
+
+
+18 7 Init expression must be integer

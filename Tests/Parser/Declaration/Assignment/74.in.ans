@@ -6,4 +6,5 @@ function FUNC: TARR;
 var I : INTEGER;
 var A : TREC;
 const M = 12;
+
 15 8 Range check error

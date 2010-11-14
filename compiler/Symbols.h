@@ -10,6 +10,7 @@ using namespace std;
 
 class Statement;
 class SymType;
+class AsmProc;
 
 class Symbol{
 public:
@@ -24,6 +25,7 @@ public:
 	virtual void SetName(string s) {name = s;}
 	virtual void Print(ostream& os, bool f){};
 	virtual SymType* GetType() {return NULL; }
+	virtual void Generate(AsmProc* Asm) {};
 protected:
 	string name;
 };
@@ -49,6 +51,7 @@ public:
 	virtual bool IsParamByRef() {return false; }
 	virtual SymType* GetType() {return type; }
 	virtual void Print(ostream& os, bool f);
+	virtual void Generate(AsmProc* Asm);
 protected:
 	SymType* type;
 };
@@ -155,6 +158,9 @@ public:
 	virtual void PrintVal(ostream& os) = 0;
 	bool IsConst() {return true; }
 	virtual bool IsInt() = 0;
+	virtual bool IsReal() = 0;
+	virtual void Generate(AsmProc* Asm); 
+	virtual string ToString() = 0;
 };
 
 class SymVarConstInt: public SymVarConst{
@@ -164,6 +170,8 @@ public:
 	void PrintVal(ostream& os) {os << val; }
 	bool IsInt() {return true; }
 	bool IsReal() {return false; }
+	bool IsString() {return false; }
+	string ToString () { return toString(val); }
 private:
 	int val;
 };
@@ -178,8 +186,23 @@ public:
 	}
 	bool IsInt() {return false; }
 	bool IsReal() {return true; }
+	bool IsString() {return false; }
+	string ToString () { return toString(val); }
 private:
 	double val;
+};
+
+class SymVarConstString: public SymVarConst{
+public:
+	SymVarConstString(string s, SymType* t, string v): SymVarConst(s, t), val(v){};
+	string GetValue() {return val; }
+	void PrintVal(ostream& os) { os << val; }
+	bool IsInt() {return false; }
+	bool IsReal() {return false; }
+	bool IsString() {return true; }
+	string ToString () { return val; }
+private:
+	string val;
 };
 
 class SymVarParam: public SymVar{

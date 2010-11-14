@@ -27,23 +27,6 @@ bool AnothBlock(string s){
 		return false;
 }
 
-void FillMaps(){
-	priority["NOT"] = 1; 
-	priority["*"] = 2; priority["/"] = 2; priority["DIV"] = 2; priority["MOD"] = 2; 
-	priority["AND"] = 2; priority["SHL"] = 2; priority["SHR"] = 2; 
-	priority["-"] = 3; priority["+"] = 3; priority["OR"] = 3; priority["XOR"] = 3;
-	priority["="] = 4; priority["<>"] = 4; priority["<"] = 4;	priority["<="] = 4; priority[">"] = 4; 
-	priority[">="] = 4;
-	priority[":="] = 5;
-}
-
-int FindOpPrior(string str){
-	map<string, int>::iterator it;
-	transform(str.begin(), str.end(), str.begin(), toupper);
-	it = priority.find(str);
-	return (it != priority.end()) ? it->second : 0;
-}
-
 void ClearArr(){
 	maxN = 0;
 	memset(arr, ' ', arrSize * arrSize);

@@ -1,15 +1,8 @@
+var F : INTEGER;
 var I : INTEGER;
 var J : INTEGER;
 var K : INTEGER;
-var F : INTEGER;
-type TT = REAL;
-
 procedure PROC(var M : INTEGER;var N : INTEGER;);
-type TT = INTEGER;
-var I : TT;
-var K : TT;
-const M = 12;
-
 begin                
 |                    
 |___if               
@@ -64,6 +57,7 @@ begin
 |                    
 end                  
 
+type TT = REAL
 
 begin                
 |                    

@@ -1,4 +1,5 @@
 type TARR = array [const 1..const 10] of INTEGER;
 var A : array [const 1..const 10] of TARR;
 var B : TARR;
+
 19 5 Invalid num of indexes

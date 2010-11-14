@@ -1,1 +1,28 @@
-function FUNC: INTEGER;
+.686
+include     include\msvcrt.inc
+include include\kernel32.inc
+include include\fpu.inc
+include include\user32.inc
+includelib  lib\msvcrt.lib
+includelib lib\user32.lib
+includelib lib\kernel32.lib
+includelib lib\fpu.lib
+.data
+I dw 0
+J dw 0
+.code
+main:
+push I
+push 5
+pop EAX
+mov [ebp + 0], EAX
+push J
+push I
+push 17
+pop EBX
+pop EAX
+add EAX, EBX
+push EAX
+pop EAX
+mov [ebp + 0], EAX
+end main

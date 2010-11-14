@@ -1,11 +1,8 @@
+var F : INTEGER;
 var I : INTEGER;
 var J : INTEGER;
 var K : INTEGER;
-var F : INTEGER;
-var R : REAL;
-
 function PROC(var M : INTEGER;var N : INTEGER;): REAL;
-
 begin         
 |             
 |___:=        
@@ -16,6 +13,7 @@ begin
 |             
 end           
 
+var R : REAL;
 
 begin               
 |                   

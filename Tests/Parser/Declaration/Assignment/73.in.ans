@@ -6,4 +6,5 @@ function FUNC: TARR;
 var I : INTEGER;
 var A : TREC;
 const M = 10;
+
 5 8 Left part of assignment must be lvalue

@@ -1,8 +1,2 @@
-var I : INTEGER;
-var J : INTEGER;
-var K : INTEGER;
-var F : INTEGER;
-
-function PROC(var M : INTEGER;var N : INTEGER;): REAL;
 
 18 4 Illegal expression

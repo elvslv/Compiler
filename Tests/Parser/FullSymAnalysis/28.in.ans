@@ -5,5 +5,6 @@ var L : INTEGER;
 var K : INTEGER;
 var ARR : array [const 1..const 10] of INTEGER;
 const M = 18;
+function FUNC(var I : INTEGER;): INTEGER;
 
 9 6 Illegal counter variable

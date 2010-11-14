@@ -6,4 +6,6 @@ var CHANGE : REAL;
 var NROW : INTEGER;
 var NCOL : COLTYPE;
 var COL : COLTYPE;
-procedure SHOWFIELD;function CHECKFIELD: INTEGER;procedure BITFORM(var (by ref) B : COLTYPE;var N : INTEGER;);
+procedure SHOWFIELD;
+function CHECKFIELD: INTEGER;
+procedure BITFORM(var (by ref) B : COLTYPE;var N : INTEGER;);

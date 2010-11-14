@@ -1,0 +1,15 @@
+procedure FUNC(var I : INTEGER;);
+begin    
+|        
+|___:=   
+|   |    
+|   |___I
+|   |    
+|   |___I
+|        
+end      
+
+var I : INTEGER;
+var J : INTEGER;
+
+15 7 Condition must be integer

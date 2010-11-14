@@ -1,9 +1,9 @@
-var I : INTEGER;
-var J : INTEGER;
-type MY_INT = INTEGER;
 var A : record 
     var X : MY_INT;
 end;
+var I : INTEGER;
+var J : INTEGER;
+type MY_INT = INTEGER
 
 begin            
 |                

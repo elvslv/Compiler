@@ -1,4 +1,5 @@
-function FUNC(var I : REAL;): INTEGER;var R : REAL;
+function FUNC(var I : REAL;): INTEGER;
+var R : REAL;
 
 :=                   
 |                    

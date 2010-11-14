@@ -56,6 +56,7 @@ void SymVarConst::Print(ostream& os, bool f) {
 			PrintVal(os);
 		}
 	}
+	//os << ";";
 }
 
 void SymTypeArray::Print(ostream& os, bool f) {

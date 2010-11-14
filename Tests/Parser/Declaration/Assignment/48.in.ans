@@ -1,3 +1,4 @@
 var A : array [const 1..const 10] of INTEGER;
 var B : array [const 1..const 10] of INTEGER;
+
 5 4 Incompatible types in assignment

@@ -1,4 +1,5 @@
 var I : INTEGER;
 var J : INTEGER;
+function FUNC(var I : INTEGER;): REAL;
 
 17 4 Condition must be integer

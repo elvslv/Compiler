@@ -1,7 +1,95 @@
 #include "Parser.h"
 #include "Symbols.h"
+
 static int id = 0;
+void Parser::PrintTable(){
+	SymTable* tbl = *lowerTable;
+	for (SymTable::iterator it = tbl->begin(); it != tbl->end(); ++it){
+		if (it->second->GetName() == "INTEGER" || it->second->GetName() == "REAL" || it->second->GetName() == "STRING")
+			continue;
+		it->second->Print(os, true);
+		if (it->second->IsConst())
+			os << ";";
+		os << "\n";
+	}
+}
+void Parser::Generate(){
+	AsmProc* curProc = Asm->AddProc("data", false, true);
+	curProc->Add(asmData);
+	SymTable* tbl = *lowerTable;
+	for (SymTable::iterator it = tbl->begin(); it != tbl->end(); ++it){
+		if (it->second->GetName() == "INTEGER" || it->second->GetName() == "REAL" || it->second->GetName() == "STRING")
+			continue;
+		if (!it->second->IsProc())
+			it->second->Generate(curProc);
+	}
+	curProc = Asm->AddProc("code", false, true);
+	curProc->Add(asmCode);
+	for (SymTable::iterator it = tbl->begin(); it != tbl->end(); ++it){
+		if (!it->second->IsProc() || it->second->GetName() == "INTEGER" || it->second->GetName() == "REAL" || it->second->GetName() == "STRING")
+			continue;
+		curProc = Asm->AddProc(it->second->GetName(), false, false);
+		it->second->Generate(curProc);
+	}
+	curProc = Asm->AddProc("main", true, false);
+	program->Generate(curProc);
+}
+void SymVar::Generate(AsmProc* Asm){
+	Asm->Add(asmDw, new AsmMem(name));
+}
+void SymVarConst::Generate(AsmProc* Asm){
+	Asm->Add(asmDw, new AsmMem(name), new AsmMem(ToString()));
+}
+void Variable::Generate(AsmProc* Asm){ Asm->Add(asmPush, new AsmMem(symbol->GetName())); }
+void Const::Generate(AsmProc* Asm){
+	if (UnnamedSymb(symbol)){
+		if (IsInt())
+			Asm->Add(asmPush, new AsmImmInt(((SymVarConstInt*)symbol)->GetValue()));
+		else if (IsReal())
+			Asm->Add(asmPush, new AsmImmReal(((SymVarConstReal*)symbol)->GetValue()));
+		else
+			Asm->Add(asmPush, new AsmImmString(((SymVarConstString*)symbol)->GetValue()));
+	}
+	else
+		Asm->Add(asmPush, new AsmMem(symbol->GetName()));
+}
+void BinaryOp::Generate(AsmProc* Asm){
+	string op = symbol->GetName();
+	left->Generate(Asm);
+	right->Generate(Asm);
+	Asm->Add(asmPop, ebx);
+	Asm->Add(asmPop, eax);
+	if (op == "*")
+		Asm->Add(asmIMul, eax, ebx);
+	if (op == "-")
+		Asm->Add(asmSub, eax, ebx);
+	if (op == "+")
+		Asm->Add(asmAdd, eax, ebx);
+	if (op == "DIV")
+		Asm->Add(asmIDiv, eax, ebx);
+	if (op == "MOD"){  //a mod b
+		Asm->Add(asmPush, eax); // a->стек
+		Asm->Add(asmIDiv, ebx); //eax = a div b
+		Asm->Add(asmPop, edx); // edx = a
+		Asm->Add(asmMov, ecx, eax);  //ecx = a div b
+		Asm->Add(asmMov, eax, edx); // eax = a
+		Asm->Add(asmIMul, ecx); //eax = a * (a div b)
+		Asm->Add(asmSub, edx, eax); // edx = a - a*(a div b)
+		Asm->Add(asmMov, eax, edx);
+	}
+	Asm->Add(asmPush, eax);
+}
+void UnaryOp::Generate(AsmProc* Asm){
+	string op = symbol->GetName();
+	child->Generate(Asm);
+	if (op == "-"){
+		Asm->Add(asmPop, eax);
+		Asm->Add(asmIMul, new AsmImmInt(-1));
+		Asm->Add(asmPush, eax);
+	}
+}
 bool UnnamedType(SymType* type){ return type && type->GetName()[0] >= '0' && type->GetName()[0] <= '9'; }
+bool UnnamedSymb(Symbol* symb){ return symb->GetName()[0] >= '0' && symb->GetName()[0] <= '9'; }
 int StmtBlock::FillTree(int i, int j){
 	int j1 = j;
 	j1 = FillTreeOp(i, j, "begin");
@@ -53,12 +141,10 @@ int StmtProcedure::FillTree(int i, int j){
 	delete func;
 	return j - j1;
 }
-void Parser::ParseMainBlock(bool assignment) { 
+void Parser::ParseMainBlock() { 
 	if (TokType() == ttEOF)
 		return;
-	StmtBlock* st = ParseBlock(tableStack->begin(), true);
-	os << "\n";
-	assignment ? st->PrintAssignment(os) : st->Print(os, 0);
+	program = ParseBlock(tableStack->begin(), true);
 }
 void PrintArgs(ostream& os, SymTable* args){
 	if (args->empty())
@@ -69,9 +155,9 @@ void PrintArgs(ostream& os, SymTable* args){
 	os << ")";
 }
 void SymProc::PrintBody(ostream& os) { 
+	os << "\n";
 	if (!body)
 		return;
-	os << "\n";
 	body->Print(os, 0);
 }
 void SymProc::Print(ostream& os, bool f) { 
@@ -89,40 +175,66 @@ void SymFunc::Print(ostream& os, bool f) {
 	PrintBody(os);
 }
 string NodeExpr::GetValue() { return symbol->GetName(); }
+bool SymIsInt(Symbol* type) { return type && ((SymType*)type)->IsInt(); }
+bool SymIsReal(Symbol* type) { return type && ((SymType*)type)->IsReal(); }
 bool Variable::IsInt() { return symbol->GetType()->IsInt(); }
 bool Variable::IsReal() { return symbol->GetType()->IsReal(); }
 bool Const::IsInt() {return symbol->GetType()->IsInt(); }
 bool Const::IsReal() {return symbol->GetType()->IsReal(); }
 bool BinaryOp::IsInt() {return right->IsInt() && left->IsInt() && IsIntOperator(GetValue()) || 
 						 ((SymType*)right->GetType())->IsScalar() && ((SymType*)right->GetType())->IsScalar() && IsLogicOperator(GetValue()); }
-bool ArrayAccess::IsInt() { return ((SymType*)GetType())->IsInt(); }
-bool ArrayAccess::IsReal() { return ((SymType*)GetType())->IsReal(); }
-bool RecordAccess::IsInt() { return ((SymType*)GetType())->IsInt(); }
-bool RecordAccess::IsReal() { return ((SymType*)GetType())->IsReal(); }
-bool FunctionCall::IsInt() {return ((SymType*)GetType())->IsInt(); }
-bool FunctionCall::IsReal() { return ((SymType*)GetType())->IsReal(); }
+bool ArrayAccess::IsInt() { return SymIsInt(GetType()); }
+bool ArrayAccess::IsReal() { return SymIsReal(GetType());  }
+bool RecordAccess::IsInt() { return SymIsInt(GetType());  }
+bool RecordAccess::IsReal() { return SymIsReal(GetType());  }
+bool FunctionCall::IsInt() { return SymIsInt(GetType());  }
+bool FunctionCall::IsReal() { return SymIsReal(GetType()); }
 bool UnaryOp::IsInt() {return child->IsInt() && IsIntOperator(GetValue()); }
 bool UnaryOp::IsReal() { return child->IsReal(); }
 bool EqTypes(SymType* t1, SymType* t2){ return t1->GetSourceType() == t2->GetSourceType(); }
 bool IToR(SymType* t1, SymType* t2){ return t1->GetSourceType()->GetName() == "REAL" && 
 											t2->GetSourceType()->GetName() == "INTEGER"; }
+void FillMaps(){
+	priority["NOT"] = 1; 
+	priority["*"] = 2; priority["/"] = 2; priority["DIV"] = 2; priority["MOD"] = 2; 
+	priority["AND"] = 2; priority["SHL"] = 2; priority["SHR"] = 2; 
+	priority["-"] = 3; priority["+"] = 3; priority["OR"] = 3; priority["XOR"] = 3;
+	priority["="] = 4; priority["<>"] = 4; priority["<"] = 4;	priority["<="] = 4; priority[">"] = 4; 
+	priority[">="] = 4;
+	priority[":="] = 5;
+	cmdNames[asmMov] = "mov"; cmdNames[asmAdd] = "add"; cmdNames[asmSub] = "sub";
+	cmdNames[asmDiv] = "div"; cmdNames[asmMul] = "mul"; cmdNames[asmIDiv] = "idiv"; 
+	cmdNames[asmIMul] = "imul"; cmdNames[asmPush] = "push"; cmdNames[asmPop] = "pop"; 
+	cmdNames[asmCmp] = "cmp"; cmdNames[asmJmp] = "jmp"; cmdNames[asmDw] = "dw"; 
+	cmdNames[asmDb] = "db"; cmdNames[asmUnknown] = "?";cmdNames[asmCode] = ".code";
+	cmdNames[asmData] = ".data";
+}
+int FindOpPrior(string str){
+	map<string, int>::iterator it;
+	transform(str.begin(), str.end(), str.begin(), toupper);
+	it = priority.find(str);
+	return (it != priority.end()) ? it->second : 0;
+}
 Parser::Parser(Scanner& sc, ostream& o): scan(sc), os(o){
-		SymTable* table = new SymTable();
-		tableStack = new SymTableStack(); 
-		FillMaps();
-		scan.Next();
-		isRecord = false;
-		isAccess = false;
-		nextScan = true;
-		idFound = true;
-		SymTypeInteger* i = new SymTypeInteger("INTEGER");
-		SymTypeReal* f = new SymTypeReal("REAL");
-		table->insert(Sym("INTEGER", i));
-		table->insert(Sym("REAL", f));
-		tableStack->push_back(table);
-		lowerTable = tableStack->begin();
-		curIdent = "";
-	}
+	SymTable* table = new SymTable();
+	tableStack = new SymTableStack(); 
+	FillMaps();
+	scan.Next();
+	isRecord = false;
+	isAccess = false;
+	nextScan = true;
+	idFound = true;
+	SymTypeInteger* i = new SymTypeInteger("INTEGER");
+	SymTypeReal* f = new SymTypeReal("REAL");
+	SymType* s = new SymTypeReal("STRING");
+	table->insert(Sym("INTEGER", i));
+	table->insert(Sym("REAL", f));
+	table->insert(Sym("STRING", s));
+	tableStack->push_back(table);
+	lowerTable = tableStack->begin();
+	curIdent = "";
+	Asm = new AsmCode();
+}
 void Parser::TryError(bool f, string mes) {
 	if (f)
 		throw Error(mes, TokPos(), TokLine());
@@ -257,7 +369,6 @@ StmtRepeat* Parser::ParseRepeat(SymStIt curTable){
 	list<Statement*> stmts;
 	StmtBlock* body = NULL;
 	scan.Next();
-	
 	while (TokType() != ttUntil){
 		bool b = TokType() == ttBegin;
 		b ? stmts.push_back(ParseBlock(curTable, false)) : stmts.push_back(ParseStatement(curTable));
@@ -278,7 +389,7 @@ StmtRepeat* Parser::ParseRepeat(SymStIt curTable){
 StmtProcedure* Parser::ParseProcedure(SymStIt curTable){
 	NodeExpr* expr =  ParseSimple(curTable, 5);
 	if (!expr->IsFunction()){
-		TryError(expr->IsBinaryOp() && expr->GetSymbol()->GetName() == ":=", "Left part of assignment must be lvalue");
+		TryError(expr->IsBinaryOp() && expr->GetSymbol()->GetName() == ":=", "Left part of assignment must be lvalue", expr->GetPos(), expr->GetLine());
 		throw Error("Invalid expression", TokPos(), TokLine());
 	}
 	SymProc* proc = (SymProc*)expr->GetSymbol();
@@ -321,6 +432,21 @@ StmtFor* Parser::ParseFor(SymStIt curTable){
 	StmtBlock* body = ParseBlock(curTable, false);
 	return new StmtFor((SymVar*)it->second, init, finit, body, to);
 }
+StmtAssign* Parser::ParseAssignment(SymStIt curTable){
+	NodeExpr* expr = ParseSimple(curTable, 5);
+	BinaryOp* res = new BinaryOp(expr->GetSymbol(), expr->GetPos(), expr->GetLine(), expr, NULL);
+	TryError(expr->GetValue() != ":=", "Illegal expression");
+	res = (BinaryOp*)expr;
+	NodeExpr* lExpr = expr;
+	while(lExpr->IsBinaryOp())
+		lExpr = ((BinaryOp*)lExpr)->GetLeft();
+	TryError(!res->GetLeft()->LValue(), "Left part of assignment must be lvalue", lExpr->GetPos(), lExpr->GetLine());
+	Symbol* t1 = res->GetLeft()->GetType();
+	Symbol* t2 = res->GetRight()->GetType();
+	TryError(!(t1 && t2 && (EqTypes((SymType*)t1, (SymType*)t2) || IToR((SymType*)t1,(SymType*) t2))), 
+				"Incompatible types in assignment", lExpr->GetPos(), lExpr->GetLine());
+	return new StmtAssign(res->GetLeft(), res->GetRight());
+}
 string Parser::CheckCurTok(SymStIt curTable, string blockName, SymTable* tbl){
 	TryError(TokType() != ttIdentifier, "Invalid lexem in " + blockName + " block");
 	string s = TokVal();
@@ -335,7 +461,6 @@ SymTable* Parser::GetArgs(SymStIt curTable, string name, list<string>** arg_name
 	SymTable* argsTable = new SymTable();
 	SymType* type = NULL;
 	int args_num = 0;
-	//int index = 0;
 	if (TokType() == ttLeftParentheses){
 		while (TokType() != ttRightParentheses){
 			CheckEof();
@@ -401,19 +526,18 @@ Symbol* Parser::ParseProcedure(SymStIt curTable, bool newProc, bool func){
 	}
 	if (newProc)
 		(**curTable)[ident] = res;
-	if (TokType() != ttForward)
+	/*if (TokType() != ttForward)
 		os << "\n";
-	res->Print(os, false);
+	res->Print(os, false);*/
 	if (TokType() != ttForward){
 		SymStIt it;
 		for (SymStIt i = tableStack->begin(); i != tableStack->end(); ++i)
 			it = i;
-		os << "\n";
 		ParseDecl(it, false);
 		body = ParseBlock(it, false);
 		res->SetBody(body);
-		res->PrintBody(os);
-		os << "\n";
+		/*res->PrintBody(os);
+		os << "\n";*/
 	}else {
 		CheckEof();
 		SmthExpexted(TokVal(), TokPos(), TokLine(), ";");
@@ -445,10 +569,10 @@ SymTable* Parser::ParseVarRecordBlock(SymStIt curTable, TokenType tt){
 				TryError(it != curTbl->end(), "Identifier already declared");
 				SymVar* v = (tt == ttVar) ? (SymVar*)new SymVarGlobal(*it1, type) : (SymVar*)new SymVarLocal(*it1, type);
 				(*curTbl)[*it1] = v;
-				if (tt == ttVar){
+				/*if (tt == ttVar){
 					v->Print(os, UnnamedType(type));
 					os << "\n";
-				}
+				}*/
 			}
 			idents.clear();
 			SmthExpexted(TokVal(), TokPos(), TokLine(), ";");
@@ -512,16 +636,16 @@ void Parser::ParseTypeConstBlock(SymStIt curTable, TokenType tt){
 			res = ParseType(curTable, true);
 			CheckEof();
 			res->SetName(ident);
-			res->Print(os, true);
+			//res->Print(os, true);
 		}
 		else{
 			curIdent = ident;
 			res = ParseConst(curTable, true);
 			CheckEof();
 			curIdent = "";
-			res->Print(os, true);
+			//res->Print(os, true);
 		}
-		os << ";\n";
+		//os << ";\n";
 		(**curTable)[ident] = res;
 		SmthExpexted(TokVal(), TokPos(), TokLine(), ";");
 		scan.Next();
@@ -631,21 +755,7 @@ int FillTreeBinOp(int i, int j, string Value, NodeExpr* left, NodeExpr* right){
 	int hr = right->FillTree(i + 4, j);
 	return hl + hr + 2;
 }
-StmtAssign* Parser::ParseAssignment(SymStIt curTable){
-	NodeExpr* expr = ParseSimple(curTable, 5);
-	BinaryOp* res = new BinaryOp(expr->GetSymbol(), expr->GetPos(), expr->GetLine(), expr, NULL);
-	TryError(expr->GetValue() != ":=", "Illegal expression");
-	res = (BinaryOp*)expr;
-	NodeExpr* lExpr = expr;
-	while(lExpr->IsBinaryOp())
-		lExpr = ((BinaryOp*)lExpr)->GetLeft();
-	TryError(!res->GetLeft()->LValue(), "Left part of assignment must be lvalue", lExpr->GetPos(), lExpr->GetLine());
-	Symbol* t1 = res->GetLeft()->GetType();
-	Symbol* t2 = res->GetRight()->GetType();
-	TryError(!(t1 && t2 && (EqTypes((SymType*)t1, (SymType*)t2) || IToR((SymType*)t1,(SymType*) t2))), 
-				"Incompatible types in assignment", lExpr->GetPos(), lExpr->GetLine());
-	return new StmtAssign(res->GetLeft(), res->GetRight());
-}
+
 NodeExpr* Parser::ParseSimple(SymStIt curTable, int prior){
 	if (prior == 1)
 		return ParseFactor(curTable);
@@ -653,6 +763,7 @@ NodeExpr* Parser::ParseSimple(SymStIt curTable, int prior){
 	int pos = TokPos();
 	int line = TokLine();
 	NodeExpr* res = ParseSimple(curTable, prior - 1);
+	string s = TokVal();
 	while (FindOpPrior(TokVal()) == prior){
 		string str = TokVal();
 		scan.Next();
@@ -868,7 +979,7 @@ NodeExpr* Parser::ParseFactor(SymStIt curTable){
 	NodeExpr* res = NULL;
 	int pos = TokPos();
 	int line = TokLine();
-	string s;
+	string s = TokVal();
 	if (TokType() == ttEOF)
 		return NULL;
 	TryError(TokType() == ttBadToken, "Invalid lexem", pos, line);
@@ -903,9 +1014,13 @@ NodeExpr* Parser::ParseFactor(SymStIt curTable){
 			type = (SymType*)((**lowerTable)["INTEGER"]);
 			symb = new SymVarConstInt(TokVal(),type, ((IntLiteral*)scan.GetToken())->GetVal());
 		}
-		else {
+		else if (TokType() == ttRealLit){
 			type = (SymType*)((**lowerTable)["REAL"]);
 			symb = new SymVarConstReal(TokVal(),type, ((RealLiteral*)scan.GetToken())->GetVal());
+		}
+		else{
+			type = (SymType*)((**lowerTable)["STRING"]);
+			symb = new SymVarConstString(TokVal(),type, ((StringLiteral*)scan.GetToken())->GetVal());
 		}
 		res = new Const(symb, pos, line);
 		res->SetType(type);

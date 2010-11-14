@@ -1,3 +1,4 @@
 procedure PROC(var (by ref) I : INTEGER;);
 procedure PROC0(var (by ref) I : INTEGER;var (by ref) K : INTEGER;var (by ref) M : INTEGER;var S : REAL;);
-29 3 ; expected
+
+29 3 ; expected end of file, but : found

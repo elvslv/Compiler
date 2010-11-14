@@ -1,15 +1,15 @@
-var N : INTEGER;
-var M : INTEGER;
-var L : INTEGER;
-var R : INTEGER;
-var I : INTEGER;
-var T : INTEGER;
-var J : INTEGER;
 var A : array [const 1..const 1000] of INTEGER;
+var ANS : INTEGER;
+var I : INTEGER;
+var J : INTEGER;
+var L : INTEGER;
 var LEN : array [const 1..const 2000] of INTEGER;
+var M : INTEGER;
+var N : INTEGER;
 var P : array [const 1..const 1000] of INTEGER;
 var Q : array [const 1..const 1000] of INTEGER;
-var ANS : INTEGER;
+var R : INTEGER;
+var T : INTEGER;
 
 begin                                            
 |                                                

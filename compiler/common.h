@@ -149,6 +149,25 @@ enum TokenType{
 	ttBadToken, 
 	ttSpecSymb, 
 };
+enum cmd{
+	asmMov, 
+	asmAdd,
+	asmSub,
+	asmDiv,
+	asmMul,
+	asmIDiv, 
+	asmIMul,
+	asmPush, 
+	asmPop, 
+	asmCmp,
+	asmJmp, 
+	asmDw,
+	asmDb,
+	asmUnknown,
+	asmCode, 
+	asmData,
+};
+static map<cmd, string> cmdNames;
 class Error 
 {
 public:

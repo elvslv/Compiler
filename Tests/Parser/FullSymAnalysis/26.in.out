@@ -1,10 +1,10 @@
 var I : INTEGER;
 var J : INTEGER;
-var N : INTEGER;
-var L : INTEGER;
 var K : INTEGER;
-var R : REAL;
+var L : INTEGER;
 const M = 18;
+var N : INTEGER;
+var R : REAL;
 
 begin                
 |                    
