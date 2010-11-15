@@ -36,6 +36,7 @@ public:
 	virtual bool IsFunction() {return false; }
 	virtual bool IsInt() {return false; }
 	virtual bool IsReal() {return false; }
+	virtual bool IsString() {return false; }
 	virtual bool IsConst() {return false; }
 	virtual bool IsBinaryOp() {return false; }
 	void SetType(Symbol* t) {type = t; }
@@ -115,11 +116,12 @@ private:
 
 class StmtWrite: public Statement{
 public:
-	StmtWrite(NodeExpr* exp, bool w):expr(exp), writeln(w){};
+	StmtWrite(bool w, list<NodeExpr*>* p): writeln(w), params(p){};
+	StmtWrite(bool w): writeln(w), params(NULL){};
 	int FillTree(int i, int j);
 	void Generate(AsmProc* Asm);
 private:
-	NodeExpr* expr;
+	list<NodeExpr*>* params;
 	bool writeln;
 };
 
@@ -160,6 +162,7 @@ public:
 	bool IsInt();
 	bool IsReal();
 	bool IsConst() {return true; }
+	bool IsString();
 	int FillTree(int i, int j) { return FillTreeIdentConst(i, j, GetValue());}
 	void Generate(AsmProc* Asm);
 };

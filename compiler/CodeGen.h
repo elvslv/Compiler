@@ -13,25 +13,35 @@ protected:
 
 class AsmOp{
 public:
-	AsmOp(){};
+	AsmOp() { name = ""; }
+	AsmOp(string n): name(n){};
+	virtual string GetName() { return name; }
 	virtual void Print(ostream& os) = 0;
+protected:
+	string name;
 };
 
 class AsmReg: public AsmOp{
 public:
-	AsmReg(string n):name(n){};
+	AsmReg(string n):AsmOp(n){};
 	void Print(ostream& os){ os << name; }
-private:
-	string name;
 };
 
 class AsmImm: public AsmOp{
 public:
 	AsmImm(){};
+	AsmImm(string n): AsmOp(n){};
 	virtual bool IsInt() { return false; }
 	virtual bool IsReal() { return false; }
 	virtual bool IsString() { return false; }
 	virtual void Print(ostream& os) = 0;
+};
+
+class AsmOffset: public AsmOp{
+public:
+	AsmOffset(string n): AsmOp(n) {};
+	AsmOffset(AsmOp* op): AsmOp(op->GetName()) {};
+	void Print(ostream& os) { os << "offset " << name; } 
 };
 
 class AsmImmInt: public AsmImm{
@@ -45,7 +55,7 @@ private:
 
 class AsmImmReal: public AsmImm{
 public:
-	AsmImmReal(float v): value(v){};
+	AsmImmReal(double v): value(v){};
 	bool IsReal() { return true; }
 	void Print(ostream& os){ os << value; }
 private:
@@ -56,17 +66,19 @@ class AsmImmString: public AsmImm{
 public:
 	AsmImmString(string v): value(v){};
 	bool IsString() { return true; }
-	void Print(ostream& os){ os << value; }
+	void Print(ostream& os){ 
+		string tmp = value;
+		for (int i = 0; i < tmp.length() / 2; ++i)
+			swap(tmp[i], tmp[tmp.length() - 1 - i]);
+		os << tmp; }
 private:
 	string value;
 };
 
 class AsmMem: public AsmOp{
 public:
-	AsmMem(string n): name(n){};
+	AsmMem(string n): AsmOp(n){};
 	void Print(ostream& os){ os << name; }
-private:
-	string name;
 };
 
 class AsmStackVal: public AsmOp{
@@ -79,19 +91,19 @@ private:
 
 class AsmInvoke: public AsmCmd{
 public:
-	AsmInvoke(cmd n, AsmImm* m, AsmReg* r): AsmCmd(n), format(m), reg(r){};
-	AsmInvoke(cmd n, AsmImm* m): AsmCmd(n), format(m), reg(NULL){};
+	AsmInvoke(cmd n, AsmOp* o1, AsmOp* o2): AsmCmd(n), op1(o1), op2(o2){};
+	AsmInvoke(cmd n, AsmOp* o1): AsmCmd(n), op1(o1), op2(NULL){};
 	void Print(ostream& os){
-		os << "invoke " << cmdNames[name] << ", addr ";
-		format->Print(os);
-		if (reg){
+		os << "invoke " << cmdNames[name] << ", ";
+		op1->Print(os);
+		if (op2){
 			os << ", ";
-			reg->Print(os);
+			op2->Print(os);
 		}
 	}
 private:
-	AsmImm* format;
-	AsmReg* reg;
+	AsmOp* op1;
+	AsmOp* op2;
 };
 
 class AsmData: public AsmCmd{
@@ -133,6 +145,20 @@ public:
 	bool IsDd() { return true; }
 };
 
+class AsmDup: public AsmCmd{
+public:
+	AsmDup(AsmData* d, AsmImm* val): data(d), value(val) {};
+	void Print(ostream& os) {
+		data->Print(os);
+		os << " dup(";
+		value->Print(os);
+		os << ")";
+	}
+private:
+	AsmData* data;
+	AsmImm* value;
+};
+
 class AsmCmd0: public AsmCmd{
 public:
 	AsmCmd0(cmd n): AsmCmd(n){};
@@ -168,11 +194,11 @@ private:
 class AsmProc{
 public:
 	AsmProc(string n, procType t): name(n), type(t) {};
-	void Add(cmd cmd){ commands.push_back(new AsmCmd0(cmd)); }
-	void Add(cmd cmd, AsmOp* op){ 
-		switch(cmd){
-			case asmPrintf: case asmScanf:
-				commands.push_back(new AsmInvoke(cmd, (AsmImm*)op));
+	void Add(cmd command){ commands.push_back(new AsmCmd0(command)); }
+	void Add(cmd command, AsmOp* op){ 
+		switch(command){
+			case asmDwtoa: case asmStdout:
+				commands.push_back(new AsmInvoke(command, op));
 				break;
 			case asmDb:
 				commands.push_back(new AsmDb((AsmMem*)op));
@@ -184,13 +210,13 @@ public:
 				commands.push_back(new AsmDd((AsmMem*)op));
 				break;
 			default:
-				commands.push_back(new AsmCmd1(cmd, op)); 
+				commands.push_back(new AsmCmd1(command, op)); 
 		}
 	}
-	void Add(cmd cmd, AsmOp* op1, AsmOp* op2){ 
-		switch(cmd){
-			case asmPrintf: case asmScanf:
-				commands.push_back(new AsmInvoke(cmd, (AsmImm*)op1, (AsmReg*)op2));
+	void Add(cmd command, AsmOp* op1, AsmOp* op2){ 
+		switch(command){
+			case asmDwtoa: case asmStdout:
+				commands.push_back(new AsmInvoke(command, op1, op2));
 				break;
 			case asmDb:
 				commands.push_back(new AsmDb((AsmMem*)op1, (AsmImm*)op2));
@@ -202,8 +228,13 @@ public:
 				commands.push_back(new AsmDd((AsmMem*)op1, (AsmImm*)op2));
 				break;
 			default:
-				commands.push_back(new AsmCmd2(cmd, op1, op2)); 
+				commands.push_back(new AsmCmd2(command, op1, op2)); 
 		}
+	}
+	void Add(cmd command, AsmCmd* cmnd, AsmOp* op){ 
+		if (command != asmDup)
+			return;
+		commands.push_back(new AsmDup((AsmData*)cmnd, (AsmImm*)op));
 	}
 	void Print(ostream& os){
 		switch(type){
@@ -223,7 +254,6 @@ public:
 		}
 		switch(type){
 			case pMain:
-				os << "\tinvoke crt_scanf, addr G_writef\n";
 				os << "\tinvoke ExitProcess, 0\n";
 				os << "end " << name << "\n";
 				break;
@@ -249,12 +279,11 @@ public:
 	void Print(ostream& os){
 		os << ".686\n";
 		os << ".model flat,stdcall\n";
-		os << "include     include\\msvcrt.inc\n";
+		os << "option casemap :none\n";
+		os << "include include\\windows.inc\n";
 		os << "include include\\kernel32.inc\n";
-		os << "include include\\fpu.inc\n";
-		os << "include include\\user32.inc\n";
-		os << "includelib  lib\\msvcrt.lib\n";
-		os << "includelib lib\\user32.lib\n";
+		os << "include include\\masm32.inc\n";
+		os << "includelib lib\\masm32.lib\n";
 		os << "includelib lib\\kernel32.lib\n";
 		for (list<AsmProc*>::iterator it = proc.begin(); it != proc.end(); ++it)
 			(*it)->Print(os);

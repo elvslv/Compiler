@@ -103,6 +103,12 @@ public:
 	bool IsInt() {return true; }
 };
 
+class SymTypeString: public SymTypeScalar{
+public:
+	SymTypeString(string s): SymTypeScalar(s){};
+	bool IsString() {return true; }
+};
+
 class SymTypeRecord: public SymType{
 public:
 	SymTypeRecord(string s, SymTable* f): SymType(s), fields(f) {};

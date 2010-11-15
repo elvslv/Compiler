@@ -170,6 +170,10 @@ enum cmd{
 	asmInvoke,
 	asmPrintf, 
 	asmScanf,
+	asmCall,
+	asmDwtoa,
+	asmDup,
+	asmStdout,
 };
 enum procType{
 	pMain,
