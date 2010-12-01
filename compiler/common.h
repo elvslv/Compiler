@@ -157,6 +157,12 @@ enum cmd{
 	asmMul,
 	asmIDiv, 
 	asmIMul,
+	asmAnd,
+	asmOr,
+	asmXor,
+	asmNot,
+	asmShl,
+	asmShr,
 	asmPush, 
 	asmPop, 
 	asmCmp,
@@ -174,6 +180,7 @@ enum cmd{
 	asmDwtoa,
 	asmDup,
 	asmStdout,
+	asmNeg, 
 };
 enum procType{
 	pMain,
@@ -182,6 +189,7 @@ enum procType{
 	pCode,
 };
 static map<cmd, string> cmdNames;
+static map<string, cmd> cmdTypes;
 class Error 
 {
 public:

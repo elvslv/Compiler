@@ -148,6 +148,8 @@ string Scanner::Change(string str)
 					++i;
 				}
 				for (int j = 0; j < cnt / 2; tmp = tmp + '\'', ++j);
+				if (str[i] == '#')
+					tmp = tmp + '\'';
 			}
 			else
 				tmp = tmp + str[i++];

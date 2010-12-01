@@ -18,7 +18,7 @@ void CheckAccess(string s, int i, int j){
 bool IsIntOperator(string val) { return (val == "+" || val == "-" || val == "*" || UpCase(val) == "MOD" 
 										|| UpCase(val) == "DIV"); }
 bool IsLogicOperator(string val) {return val == "<" || val == ">" || val == "<=" || val == ">=" || val == "=" 
-									|| val == "<>" || val == "OR" || val == "AND" || val == "XOR"; }
+									|| val == "<>" || val == "OR" || val == "AND" || val == "XOR" || val == "SHL" || val == "SHR" || val == "NOT";}
 
 bool AnothBlock(string s){
 	if (s == "TYPE" || s == "CONST" || s == "PROCEDURE" || s == "FUNCTION" || s == "BEGIN" || s == "EOF" || s == "VAR")

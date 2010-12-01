@@ -1,0 +1,161 @@
+C:\masm32\bin\DZ.exe               (hex)           (dec)
+
+.EXE size (bytes)                    490            1168
+Minimum load size (bytes)            450            1104
+Overlay number                         0               0
+Initial CS:IP                  0000:0000
+Initial SS:SP                  0000:00B8             184
+Minimum allocation (para)              0               0
+Maximum allocation (para)           FFFF           65535
+Header size (para)                     4               4
+Relocation table offset               40              64
+Relocation entries                     0               0
+
+Portable Executable starts at                 b0
+Signature                               00004550 (PE)
+Machine                                     014C (Intel 386)
+Sections                                    0003
+Time Date Stamp                         4C8792FA Thu Sep  9 00:43:22 2010
+Symbol Table                            00000000
+Number of Symbols                       00000000
+Optional header size                        00E0
+Characteristics                             010F
+	Relocation information stripped
+	Executable Image
+	Line numbers stripped
+	Local symbols stripped
+	32 bit word machine
+Magic                                       010B
+Linker Version                              5.12
+Size of Code                            00000200
+Size of Initialized Data                00000400
+Size of Uninitialized Data              00000000
+Address of Entry Point                  00001000
+Base of Code                            00001000
+Base of Data                            00002000
+Image Base                              00400000
+Section Alignment                       00001000
+File Alignment                          00000200
+Operating System Version                    4.00
+Image Version                               0.00
+Subsystem Version                           4.00
+reserved                                00000000
+Image Size                              00004000
+Header Size                             00000400
+Checksum                                00000000
+Subsystem                                   0002 (Windows)
+DLL Characteristics                         0000
+Size Of Stack Reserve                   00100000
+Size Of Stack Commit                    00001000
+Size Of Heap Reserve                    00100000
+Size Of Heap Commit                     00001000
+Loader Flags                            00000000
+Number of Directories                   00000010
+
+Directory Name                          VirtAddr  VirtSize
+--------------------------------------  --------  --------
+Export                                  00000000  00000000
+Import                                  00002014  0000003C
+Resource                                00000000  00000000
+Exception                               00000000  00000000
+Security                                00000000  00000000
+Base Relocation                         00000000  00000000
+Debug                                   00000000  00000000
+Decription/Architecture                 00000000  00000000
+Machine Value (MIPS GP)                 00000000  00000000
+Thread Storage                          00000000  00000000
+Load Configuration                      00000000  00000000
+Bound Import                            00000000  00000000
+Import Address Table                    00002000  00000014
+Delay Import                            00000000  00000000
+COM Runtime Descriptor                  00000000  00000000
+(reserved)                              00000000  00000000
+
+Section Table
+-------------
+01  .text   	Virtual Address         00001000
+		Virtual Size            00000066
+		Raw Data Offset         00000400
+		Raw Data Size           00000200
+		Relocation Offset       00000000
+		Relocation Count        0000
+		Line Number Offset      00000000
+		Line Number Count       0000
+		Characteristics         60000020
+			Code
+			Executable
+			Readable
+
+02  .rdata  	Virtual Address         00002000
+		Virtual Size            000000A6
+		Raw Data Offset         00000600
+		Raw Data Size           00000200
+		Relocation Offset       00000000
+		Relocation Count        0000
+		Line Number Offset      00000000
+		Line Number Count       0000
+		Characteristics         40000040
+			Initialized Data
+			Readable
+
+03  .data   	Virtual Address         00003000
+		Virtual Size            0000002B
+		Raw Data Offset         00000800
+		Raw Data Size           00000200
+		Relocation Offset       00000000
+		Relocation Count        0000
+		Line Number Offset      00000000
+		Line Number Count       0000
+		Characteristics         C0000040
+			Initialized Data
+			Readable
+			Writeable
+
+
+ Imp Addr Hint Import Name from user32.dll - Not Bound
+ -------- ---- ---------------------------------------------------------------
+ 00002008  1B1 MessageBoxA
+ 0000200C  27D wsprintfA
+
+ Imp Addr Hint Import Name from kernel32.dll - Not Bound
+ -------- ---- ---------------------------------------------------------------
+ 00002000   9B ExitProcess
+
+IAT Entry
+
+ 00000000: 0000208A 00000000 - 00002070 00002064 - 00000000 
+
+Disassembly
+
+00401000                    start:
+00401000 A100304000             mov     eax,[403000h]
+00401005 030504304000           add     eax,[403004h]
+0040100B 50                     push    eax
+0040100C A108304000             mov     eax,[403008h]
+00401011 2B050C304000           sub     eax,[40300Ch]
+00401017 8BD8                   mov     ebx,eax
+00401019 58                     pop     eax
+0040101A 33D2                   xor     edx,edx
+0040101C F7F3                   div     ebx
+0040101E 8B1D10304000           mov     ebx,[403010h]
+00401024 F7E3                   mul     ebx
+00401026 50                     push    eax
+00401027 6828304000             push    403028h
+0040102C 6814304000             push    403014h
+00401031 E81E000000             call    fn_00401054
+00401036 83C40C                 add     esp,0Ch
+00401039 6A00                   push    0
+0040103B 681E304000             push    40301Eh
+00401040 6814304000             push    403014h
+00401045 6A00                   push    0
+00401047 E80E000000             call    fn_0040105A
+0040104C 6A00                   push    0
+0040104E E80D000000             call    fn_00401060
+00401053 CC                     int     3
+00401054                    fn_00401054:
+00401054 FF250C204000           jmp     dword ptr [wsprintfA]
+0040105A                    fn_0040105A:
+0040105A FF2508204000           jmp     dword ptr [MessageBoxA]
+00401060                    fn_00401060:
+00401060 FF2500204000           jmp     dword ptr [ExitProcess]
+

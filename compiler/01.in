@@ -1,6 +1,4 @@
-var i, j: integer;
+var a, b: integer;
 begin
-	i := 5;
-	j := i + 17;
-	writeln(i + j * 5, 'ans', 5 + 17, 35)
+	writeln('sdghkjshjkh''gfkjdkdsh'#65#66#67'gsjdghjh'''''#257);
 end.

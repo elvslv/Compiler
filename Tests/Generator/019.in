@@ -1,0 +1,6 @@
+begin
+	writeln;
+	writeln;
+	write;
+	writeln(10);
+end.

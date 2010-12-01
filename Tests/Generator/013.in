@@ -1,0 +1,6 @@
+var a, b: integer;
+begin
+	a := 3;
+	b := 6;
+	write(not(10), ' ', a and b, ' ', b or a, ' ', a xor 6);
+end.

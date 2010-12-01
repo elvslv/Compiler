@@ -1,0 +1,8 @@
+var a, b, i, j: integer;
+begin
+	a := 3;
+	b := 6;
+	i := a * 22;
+	j := b - a * 8;
+	writeln(a * b + (i mod (j - 5)));
+end.

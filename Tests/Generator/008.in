@@ -1,0 +1,13 @@
+var b: integer;
+
+type tt = integer;
+
+var d: tt;
+
+begin
+	
+	d := -20;
+	b := d + 10 * d;
+
+	write(d, ' ', b);
+end.

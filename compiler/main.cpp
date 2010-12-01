@@ -22,10 +22,9 @@ int main(int argc, char* argv[])
 		ofstream os;
 		string tmp = argv[1];
 		tmp += ".out";
-		os.open(tmp.c_str());
 		try
 		{
-			if (is.good() && os.good())
+			if (is.good())
 			{
 					Scanner scanner(is);
 					bool flex = false;
@@ -46,6 +45,7 @@ int main(int argc, char* argv[])
 							fgen = true;	
 					}
 					if (flex){
+						os.open(tmp.c_str());
 						while(scanner.GetToken()->GetType() != ttBadToken && scanner.GetToken()->GetType() != ttEOF)
 						{
 							scanner.Next();
@@ -54,6 +54,7 @@ int main(int argc, char* argv[])
 						}
 					}
 					if (fsyn){
+						os.open(tmp.c_str());
 						ExprParser parser(scanner);
 						Expr* expr = parser.ParseSimpleExpr();	
 						if (scanner.GetToken()->GetType() != ttEOF)
@@ -64,6 +65,7 @@ int main(int argc, char* argv[])
 								expr->Print(os, 0);
 					}
 					if (fsym || fsymt){
+						os.open(tmp.c_str());
 						Parser parser(scanner, os);
 						parser.ParseMainDecl();
 						parser.PrintTable();
@@ -75,6 +77,11 @@ int main(int argc, char* argv[])
 						int i = 0;
 					}
 					if (fgen){
+						ofstream os;
+						string tmp = argv[1];
+						tmp = tmp.substr(0, tmp.length() - 3);
+						tmp += ".asm";
+						os.open(tmp.c_str());
 						Parser parser(scanner, os);
 						parser.ParseMainDecl();
 						parser.ParseMainBlock();

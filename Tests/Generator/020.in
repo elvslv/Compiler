@@ -1,0 +1,7 @@
+begin
+	writeln($123);
+	writeln(&123);
+	writeln($123 + 5);
+	writeln($12F3);
+	writeln(&23 + $FF);
+end.

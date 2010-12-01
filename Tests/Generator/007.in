@@ -1,0 +1,6 @@
+var i, j: integer;
+begin
+	i := 158 - 15 div 7;
+	j := i mod 5;
+	write(i, ' ', j, 'tartat', i * j);
+end.

@@ -4,7 +4,10 @@
 #include "CodeGen.h"
 #include "Scanner.h"
 #include "common.h"
+
 using namespace std;
+
+AsmMem* mem(string name);
 static AsmReg* eax = new AsmReg("EAX");
 static AsmReg* ebx = new AsmReg("EBX");
 static AsmReg* ecx = new AsmReg("ECX");
@@ -13,6 +16,9 @@ static AsmReg* esi = new AsmReg("ESI");
 static AsmReg* edi = new AsmReg("EDI");
 static AsmReg* ebp = new AsmReg("EBP");
 static AsmReg* esp = new AsmReg("ESP");
+static AsmMem* writeBuf = mem("writebuf");
+static AsmOffset* writeBufOff = new AsmOffset(writeBuf);
+
 bool UnnamedSymb(Symbol* symb);
 AsmMem* mem(string name);
 class Parser;
@@ -61,12 +67,7 @@ class StmtAssign: public Statement{
 public:
 	StmtAssign(NodeExpr* l, NodeExpr* r): left(l), right(r){};
 	int FillTree(int i, int j){ return FillTreeBinOp(i, j, ":=", left, right);}
-	void Generate(AsmProc* Asm){
-		left->Generate(Asm);
-		right->Generate(Asm);
-		Asm->Add(asmPop, eax);
-		Asm->Add(asmMov, mem(left->GetValue()), eax);
-	};
+	void Generate(AsmProc* Asm);
 private:
 	NodeExpr* left;
 	NodeExpr* right;

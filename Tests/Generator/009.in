@@ -1,0 +1,9 @@
+var x, y: integer;
+begin
+  x := 2*2;
+  y := x*2;
+  writeln(x);
+  write(' ');
+  write(y);
+  write(y + 10, '   ', x * 15, '    ',255);
+end.

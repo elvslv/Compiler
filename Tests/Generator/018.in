@@ -1,0 +1,6 @@
+var a, b: integer;
+begin
+	a := 2 * 10;
+	b := 1024 - 5;
+	writeln(a * b mod 1000);
+end.

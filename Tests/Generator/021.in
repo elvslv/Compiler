@@ -1,0 +1,4 @@
+begin
+	writeln(#115);
+	writeln(#115'abs'#18);
+end.

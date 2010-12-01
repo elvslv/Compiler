@@ -1,0 +1,6 @@
+var x: integer;
+begin
+	writeln(x);
+	x := 99;
+	write(--99, ' ', --x, ' ', +x, ' ', -100, ' ', 'trrrr');
+end.

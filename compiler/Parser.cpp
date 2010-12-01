@@ -4,36 +4,66 @@ static int id = 0;
 static int stringCnt = 0;
 static map<string, string> strings;
 AsmMem* mem(string name){ return new AsmMem("G_" + name); }
-void Parser::PrintTable(){
-	SymTable* tbl = *lowerTable;
-	for (SymTable::iterator it = tbl->begin(); it != tbl->end(); ++it){
-		if (it->second->GetName() == "INTEGER" || it->second->GetName() == "REAL" || it->second->GetName() == "STRING")
-			continue;
-		it->second->Print(os, true);
-		if (it->second->IsConst())
-			os << ";";
-		os << "\n";
-	}
-}
+AsmMem* mem(string name, int off){ return new AsmMem("G_" + name, off); }
+
 void Parser::Generate(){
 	AsmProc* curProc = Asm->AddProc(".data", pData);
 	SymTable* tbl = *lowerTable;
 	for (SymTable::iterator it = tbl->begin(); it != tbl->end(); ++it){
-		if (it->second->GetName() == "INTEGER" || it->second->GetName() == "REAL" || it->second->GetName() == "STRING")
+		if (it->second->IsType())
 			continue;
 		if (!it->second->IsProc())
 			it->second->Generate(curProc);
 	}
-	curProc->Add(asmDup, new AsmDd(mem("writebuf"), new AsmImmInt(256)), new AsmImmInt(0));
+	curProc->Add(asmDup, new AsmDd(writeBuf, new AsmImmInt(256)), new AsmImmInt(0));
 	curProc = Asm->AddProc(".code", pCode);
 	for (SymTable::iterator it = tbl->begin(); it != tbl->end(); ++it){
-		if (!it->second->IsProc() || it->second->GetName() == "INTEGER" || it->second->GetName() == "REAL" || it->second->GetName() == "STRING")
+		if (!it->second->IsProc() || it->second->IsType())
 			continue;
 		curProc = Asm->AddProc(it->second->GetName(), pProc);
 		it->second->Generate(curProc);
 	}
 	curProc = Asm->AddProc("main", pMain);
 	program->Generate(curProc);
+}
+void StmtAssign::Generate(AsmProc* Asm){
+	left->Generate(Asm);
+	right->Generate(Asm);
+	Asm->Add(asmPop, eax);
+	Asm->Add(asmMov, mem(left->GetValue()), eax);
+}
+string ChangeString(string tmp, int i){
+	string str = tmp.substr(i * 4, 4);
+	for (int j = 0; j < str.length(); ++j)
+		if (str.substr(j, 1) == "'")
+			str.insert(j++, "'");
+	str = "'" + str + "'";
+	return str;
+}
+void StmtWrite::Generate(AsmProc* Asm){
+	if (params)
+		for (list<NodeExpr*>::iterator it = params->begin(); it != params->end(); ++it){
+			if ((*it)->IsString()){
+				string tmp = ((SymVarConstString*)((*it)->GetSymbol()))->GetValue();
+				string str;
+				tmp = tmp.substr(1, tmp.length() - 2);
+				for (int i = 0; i < tmp.length() / 4 + (tmp.length() % 4 != 0); ++i){
+					str = ChangeString(tmp, i);
+					Asm->Add(asmMov, *writeBuf + i * 4, new AsmImmString(str));
+				}
+			}
+			else{
+				(*it)->Generate(Asm);
+				Asm->Add(asmPop, eax);
+				Asm->Add(asmDwtoa, eax, writeBufOff);
+			}
+			Asm->Add(asmStdout, writeBufOff);
+		}
+	if (writeln){
+		Asm->Add(asmMov, writeBuf, new AsmImmInt(10));
+		Asm->Add(asmMov, *writeBuf + 4, new AsmImmInt(0));
+		Asm->Add(asmStdout, writeBufOff);
+	}
 }
 void SymVar::Generate(AsmProc* Asm){
 	Asm->Add(asmDd, mem(name));
@@ -65,45 +95,37 @@ void BinaryOp::Generate(AsmProc* Asm){
 	right->Generate(Asm);
 	Asm->Add(asmPop, ebx);
 	Asm->Add(asmPop, eax);
-	if (op == "*")
-		Asm->Add(asmIMul, eax, ebx);
-	if (op == "-")
-		Asm->Add(asmSub, eax, ebx);
-	if (op == "+")
-		Asm->Add(asmAdd, eax, ebx);
-	if (op == "DIV")
-		Asm->Add(asmIDiv, eax, ebx);
-	if (op == "MOD"){  //a mod b
-		Asm->Add(asmPush, eax); // a->стек
-		Asm->Add(asmIDiv, ebx); //eax = a div b
-		Asm->Add(asmPop, edx); // edx = a
-		Asm->Add(asmMov, ecx, eax);  //ecx = a div b
-		Asm->Add(asmMov, eax, edx); // eax = a
-		Asm->Add(asmIMul, ecx); //eax = a * (a div b)
-		Asm->Add(asmSub, edx, eax); // edx = a - a*(a div b)
+	if (op == "DIV"){
+		Asm->Add(asmXor, edx, edx);
+		Asm->Add(cmdTypes[op], ebx);
+	}
+	else if (op == "MOD"){  
+		Asm->Add(asmXor, edx, edx);
+		Asm->Add(asmIDiv, ebx);
 		Asm->Add(asmMov, eax, edx);
 	}
+	else
+		Asm->Add(cmdTypes[op], eax, ebx);
 	Asm->Add(asmPush, eax);
 }
 void UnaryOp::Generate(AsmProc* Asm){
 	string op = symbol->GetName();
 	child->Generate(Asm);
-	if (op == "-"){
-		Asm->Add(asmPop, eax);
-		Asm->Add(asmIMul, new AsmImmInt(-1));
-		Asm->Add(asmPush, eax);
-	}
+	if (op == "+")
+		return;
+	Asm->Add(asmPop, eax);
+	Asm->Add(cmdTypes[op], eax);
+	Asm->Add(asmPush, eax);
 }
-void StmtWrite::Generate(AsmProc* Asm){
-	for (list<NodeExpr*>::iterator it = params->begin(); it != params->end(); ++it){
-		(*it)->Generate(Asm);
-		Asm->Add(asmPop, eax);
-		AsmOffset* off = new AsmOffset("G_writebuf");
-		if((*it)->IsInt())
-			Asm->Add(asmDwtoa, eax, off);
-		else
-			Asm->Add(asmMov, mem("writebuf"), eax);
-		Asm->Add(asmStdout, off);
+void Parser::PrintTable(){
+	SymTable* tbl = *lowerTable;
+	for (SymTable::iterator it = tbl->begin(); it != tbl->end(); ++it){
+		if (it->second->GetName() == "INTEGER" || it->second->GetName() == "REAL" || it->second->GetName() == "STRING")
+			continue;
+		it->second->Print(os, true);
+		if (it->second->IsConst())
+			os << ";";
+		os << "\n";
 	}
 }
 bool UnnamedType(SymType* type){ return type && type->GetName()[0] >= '0' && type->GetName()[0] <= '9'; }
@@ -223,11 +245,17 @@ void FillMaps(){
 	priority[":="] = 5;
 	cmdNames[asmMov] = "mov"; cmdNames[asmAdd] = "add"; cmdNames[asmSub] = "sub";
 	cmdNames[asmDiv] = "div"; cmdNames[asmMul] = "mul"; cmdNames[asmIDiv] = "idiv"; 
+	cmdNames[asmAnd] = "and"; cmdNames[asmOr] = "or"; cmdNames[asmXor] = "xor"; 
+	cmdNames[asmNot] = "not"; cmdNames[asmShl] = "shl"; cmdNames[asmShr] = "shr"; 
+	cmdTypes["+"] = asmAdd; cmdTypes["-"] = asmSub; cmdTypes["DIV"] = asmIDiv; cmdTypes["*"] = asmIMul;
+	cmdTypes["AND"] = asmAnd; cmdTypes["OR"] = asmOr; cmdTypes["XOR"] = asmXor; 
+	cmdTypes["NOT"] = asmNot; cmdTypes["SHL"] = asmShl; cmdTypes["SHR"] = asmShr; 
 	cmdNames[asmIMul] = "imul"; cmdNames[asmPush] = "push"; cmdNames[asmPop] = "pop"; 
 	cmdNames[asmCmp] = "cmp"; cmdNames[asmJmp] = "jmp"; cmdNames[asmDw] = "dw"; cmdNames[asmDd] = "dd"; 
 	cmdNames[asmDb] = "db"; cmdNames[asmUnknown] = "?";cmdNames[asmCode] = ".code";
 	cmdNames[asmData] = ".data"; cmdNames[asmScanf] = "crt_scanf"; cmdNames[asmPrintf] = "crt_printf";
 	cmdNames[asmCall] = "call"; cmdNames[asmDwtoa] = "dwtoa"; cmdNames[asmStdout] = "StdOut";
+	cmdNames[asmNeg] = "neg";
 }
 int FindOpPrior(string str){
 	map<string, int>::iterator it;
@@ -413,7 +441,6 @@ StmtWrite* Parser::ParseWrite(SymStIt curTable, bool w){
 	scan.Next();
 	if (TokType() != ttLeftParentheses)
 		return new StmtWrite(w);
-	string format = "\"";
 	map<string, string>::iterator it;
 	list<NodeExpr*>* params = new list<NodeExpr*>();
 	while (TokType() != ttRightParentheses){

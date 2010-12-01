@@ -1,0 +1,9 @@
+var a, b, c, d: integer;
+begin
+	a := a + 78;
+	b := a - 156;
+	c := - (a mod b) + 44 * (13 - c);  
+	writeln(a);
+	writeln(b);
+	writeln(c);
+end.
