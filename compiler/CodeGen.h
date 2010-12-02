@@ -83,6 +83,21 @@ private:
 	int offset;
 };
 
+class AsmMemByAddr: public AsmOp{
+public:
+	AsmMemByAddr(AsmOp* m, int offs): mem(m), offset(new AsmImmInt(offs)){};
+	AsmMemByAddr(AsmOp* m, AsmOp* off): mem(m), offset(off){};
+	void Print(ostream& os) {
+		os << "["; 
+		mem->Print(os);
+		os  << " + ";
+		offset->Print(os); 
+		os << "]";}
+private:
+	AsmOp* mem;
+	AsmOp* offset;
+};
+
 class AsmStackVal: public AsmOp{
 public:
 	AsmStackVal(int o): offset(o){};

@@ -51,6 +51,7 @@ public:
 	int GetPos() {return pos;}
 	int GetLine() {return line;}
 	virtual void Generate(AsmProc* Asm){};
+	virtual void GenLValue(AsmProc* Asm){};
 protected:
 	Symbol* symbol;
 	Symbol* type;
@@ -134,6 +135,7 @@ public:
 	bool IsReal();
 	int FillTree(int i, int j){ return FillTreeIdentConst(i, j, GetValue());}
 	void Generate(AsmProc* Asm);
+	void GenLValue(AsmProc* Asm);
 };
 
 class StmtFor: public Statement{
@@ -193,6 +195,8 @@ public:
 	bool IsInt();
 	bool IsReal();
 	int FillTree(int i, int j){return FillTreeBinOp(i, j, GetValue(), left, right);}
+	void GenLValue(AsmProc* Asm);
+	void Generate(AsmProc* Asm);
 };
 
 class RecordAccess: public NodeExpr{
@@ -202,6 +206,8 @@ public:
 	bool IsInt();
 	bool IsReal();
 	int FillTree(int i, int j) {return FillTreeBinOp(i, j, ".", left, right);}
+	void GenLValue(AsmProc* Asm);
+	void Generate(AsmProc* Asm);
 private:
 	NodeExpr* left;
 	NodeExpr* right;
@@ -216,6 +222,7 @@ public:
 	bool IsFunction() { return true; }
 	list<NodeExpr*>* GetArgs() { return &args; }
 	int FillTree(int i, int j);
+	void Generate(AsmProc* Asm);
 private:
 	list<NodeExpr*> args;
 };
@@ -294,8 +301,8 @@ private:
 	StmtIf* ParseIf(SymStIt curTable);
 	StmtRepeat* ParseRepeat(SymStIt curTable);
 	StmtFor* ParseFor(SymStIt curTable);
-	SymTable::iterator FindS(string s, SymStIt curTable, SymStIt end);
-	SymTable::iterator FindS(string s, SymTable* curTable);
+	SymMap::iterator FindS(string s, SymStIt curTable, SymStIt end);
+	SymMap::iterator FindS(string s, SymTable* curTable);
 	void TryError(bool f, string mes);
 	void TryError(bool f, string mes, int pos, int line);
 	Scanner& scan;

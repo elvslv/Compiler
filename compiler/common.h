@@ -13,7 +13,19 @@ static int maxN = 0;
 static map<string, int> priority;
 class Symbol;
 typedef pair<string, Symbol*> Sym;
-typedef map <string, Symbol*> SymTable;
+typedef map<string, Symbol*> SymMap;
+class SymTable{
+public:
+	SymTable() { curCnt = 0; offset = 0;}
+	SymMap* GetTable() { return &table; }
+	int GetOffset() { return offset; }
+	void insert(string str, Symbol* symb);
+private:
+	SymMap table;
+	map <int, string> index;
+	int curCnt;
+	int offset;
+};
 typedef list<SymTable*> SymTableStack;
 typedef SymTableStack::iterator SymStIt;
 enum State
@@ -181,6 +193,14 @@ enum cmd{
 	asmDup,
 	asmStdout,
 	asmNeg, 
+	asmFLd, 
+	asmFStp,
+	asmFAdd,
+	asmFSub,
+	asmFImul,
+	asmFIdiv,
+	asmFChs,
+	asmRepMovsd,
 };
 enum procType{
 	pMain,

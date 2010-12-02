@@ -26,6 +26,7 @@ public:
 	virtual void Print(ostream& os, bool f){};
 	virtual SymType* GetType() {return NULL; }
 	virtual void Generate(AsmProc* Asm) {};
+	virtual int Size() { return 4; };
 protected:
 	string name;
 };
@@ -46,14 +47,17 @@ public:
 
 class SymVar: public Symbol{
 public:
-	SymVar(string s, SymType* t): Symbol(s), type(t){};
+	SymVar(string s, SymType* t, int off): Symbol(s), type(t), offset(off){};
 	virtual bool IsVar() {return true;}
 	virtual bool IsParamByRef() {return false; }
 	virtual SymType* GetType() {return type; }
 	virtual void Print(ostream& os, bool f);
 	virtual void Generate(AsmProc* Asm);
+	virtual int GetOffset() { return offset; }
+	virtual int Size() { return type->Size(); }
 protected:
 	SymType* type;
+	int offset;
 };
 
 class SymProc: public Symbol{
@@ -81,6 +85,7 @@ public:
 	SymTable* GetArgsTable() {return args;}
 	list<string>* GetArgNames() {return argNames;}
 	SymType* GetType() {return type; }
+	int Size() { return type->Size(); }
 private:
 	SymType* type;
 };
@@ -89,6 +94,7 @@ class SymTypeScalar: public SymType{
 public:
 	SymTypeScalar(string s): SymType(s){};
 	virtual bool IsScalar() {return true;}
+	virtual int Size() { return 4; }
 };
 
 class SymTypeReal: public SymTypeScalar{
@@ -107,6 +113,7 @@ class SymTypeString: public SymTypeScalar{
 public:
 	SymTypeString(string s): SymTypeScalar(s){};
 	bool IsString() {return true; }
+	//int TypeSize() { return 4; } //
 };
 
 class SymTypeRecord: public SymType{
@@ -115,6 +122,13 @@ public:
 	bool IsRecord() {return true;}
 	void Print(ostream& os, bool f);
 	SymTable* GetFileds() {return fields; }
+	int Size() { 
+		int res = 0;
+		for (SymMap::iterator it = fields->GetTable()->begin(); it != fields->GetTable()->end(); ++it)
+			res += it->second->Size();
+		return res;
+	}
+	void Generate(AsmProc* Asm);
 private:
 	SymTable* fields;
 };
@@ -134,6 +148,7 @@ public:
 			t1 = ((SymTypeAlias*)t1)->GetRefType();
 		return t1;
 	}
+	int Size() { return GetSourceType()->Size(); }
 private:
 	SymType* refType;
 };
@@ -149,17 +164,17 @@ private:
 
 class SymVarLocal: public SymVar{
 public:
-	SymVarLocal(string s, SymType* t): SymVar(s, t){};
+	SymVarLocal(string s, SymType* t, int off): SymVar(s, t, off){};
 };
 
 class SymVarGlobal: public SymVar{
 public:
-	SymVarGlobal(string s, SymType* t): SymVar(s, t){};
+	SymVarGlobal(string s, SymType* t, int off): SymVar(s, t, off){};
 };
 
 class SymVarConst: public SymVar{
 public:
-	SymVarConst(string s, SymType* t): SymVar(s, t){};
+	SymVarConst(string s, SymType* t, int off): SymVar(s, t, off){};
 	virtual void Print(ostream& os, bool f);
 	virtual void PrintVal(ostream& os) = 0;
 	bool IsConst() {return true; }
@@ -168,11 +183,12 @@ public:
 	virtual bool IsString() {return false; }
 	virtual void Generate(AsmProc* Asm); 
 	virtual string ToString() = 0;
+	virtual int Size() { return 4; }
 };
 
 class SymVarConstInt: public SymVarConst{
 public:
-	SymVarConstInt(string s, SymType* t, int v): SymVarConst(s, t), val(v){};
+	SymVarConstInt(string s, SymType* t, int off, int v): SymVarConst(s, t, off), val(v){};
 	int GetValue() {return val; }
 	void PrintVal(ostream& os) {os << val; }
 	bool IsInt() {return true; }
@@ -183,7 +199,7 @@ private:
 
 class SymVarConstReal: public SymVarConst{
 public:
-	SymVarConstReal(string s, SymType* t, double v): SymVarConst(s, t), val(v){};
+	SymVarConstReal(string s, SymType* t, int off, double v): SymVarConst(s, t, off), val(v){};
 	double GetValue() {return val; }
 	void PrintVal(ostream& os) {
 		os.precision(10);
@@ -197,43 +213,47 @@ private:
 
 class SymVarConstString: public SymVarConst{
 public:
-	SymVarConstString(string s, SymType* t, string v): SymVarConst(s, t), val(v){};
+	SymVarConstString(string s, SymType* t, int off, string v): SymVarConst(s, t, off), val(v){};
 	string GetValue() {return val; }
 	void PrintVal(ostream& os) { os << val; }
 	bool IsString() { return true; }
 	string ToString () { return val; }
+	int Size() { return val.length(); }
 private:
 	string val;
 };
 
 class SymVarParam: public SymVar{
 public:
-	SymVarParam(string s, SymType* t): SymVar(s, t){};
+	SymVarParam(string s, SymType* t, int off): SymVar(s, t, off){};
+	virtual void Generate(AsmProc* Asm, int offs_n);
 };
 
 class SymVarParamByValue: public SymVarParam{
 public:
-	SymVarParamByValue(string s, SymType* t): SymVarParam(s, t){};
+	SymVarParamByValue(string s, SymType* t, int off): SymVarParam(s, t, off){};
 };
 
 class SymVarParamByRef: public SymVarParam{
 public:
-	SymVarParamByRef(string s, SymType* t): SymVarParam(s, t){};
+	SymVarParamByRef(string s, SymType* t, int off): SymVarParam(s, t, off){};
 	void Print(ostream& os, bool f);
 	virtual bool IsParamByRef() {return true; }
 };
 
 class SymTypeArray: public SymType{
 public:
-	SymTypeArray(string s, SymType* type, SymVarConst* b, SymVarConst* t): SymType(s), elemType(type), bottom(b), top(t) {};
+	SymTypeArray(string s, SymType* type, SymVarConstInt* b, SymVarConstInt* t): SymType(s), elemType(type), bottom(b), top(t) {};
 	bool IsArray() {return true;}
 	void Print(ostream& os, bool f);
 	SymType* GetElemType() {return elemType; }
 	SymVarConst* GetBottom() {return bottom; }
 	SymVarConst* GetTop() {return top; }
+	int Size() { return (top->GetValue() - bottom->GetValue() + 1) * elemType->Size(); }
+	void Generate(AsmProc* Asm);
 private:
 	SymType* elemType;
-	SymVarConst* bottom; SymVarConst* top;
+	SymVarConstInt* bottom; SymVarConstInt* top;
 };
 
 #endif //_SYMBOLS_H_

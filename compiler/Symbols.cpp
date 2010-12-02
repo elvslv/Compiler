@@ -1,4 +1,9 @@
 #include "Symbols.h"
+void SymTable::insert(string str, Symbol* symb){
+	table.insert(pair<string, Symbol*>(str, symb));
+	index.insert(pair<int, string>(curCnt++, str));
+	offset += symb->Size();
+}
 void SymVar::Print(ostream& os, bool f) { 
 	os << "var "<< name << " : "; 
 	type->Print(os, f); 
@@ -12,7 +17,7 @@ void SymTypeRecord::Print(ostream& os, bool f) {
 		if (name != "" && (name[0] < '0' || name[0] > '9'))
 			os << "type " << name << " = ";
 		os << "record \n";
-		for (SymTable::iterator it = fields->begin(); it != fields->end(); ++it){
+		for (SymMap::iterator it = fields->GetTable()->begin(); it != fields->GetTable()->end(); ++it){
 			os << "    ";
 			string s = (*it->second).GetType()->GetName();
 			(*it->second).Print(os, (*it->second).IsVar() && s[0] >= '0' && s[0] <= '9');
