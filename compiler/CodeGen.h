@@ -83,6 +83,15 @@ private:
 	int offset;
 };
 
+class AsmProcName: public AsmOp{
+public:
+	AsmProcName(string n): AsmOp(n), offset(0){};
+	AsmProcName(string n, int off): AsmOp(n), offset(off){};
+	void Print(ostream& os) { os << name; } ;
+private:
+	int offset;
+};
+
 class AsmMemByAddr: public AsmOp{
 public:
 	AsmMemByAddr(AsmOp* m, int offs): mem(m), offset(new AsmImmInt(offs)){};
@@ -185,6 +194,20 @@ private:
 	AsmOp* op1, *op2;
 };
 
+class AsmLabel: public AsmCmd0{
+public:
+	AsmLabel(string n): AsmCmd0(asmLbl), name(n){};
+	void Print(ostream& os) { os << name << ":"; }
+private:
+	string name;
+};
+
+class AsmLabelOp: public AsmOp{
+public:
+	AsmLabelOp(string name): AsmOp(name){};
+	void Print(ostream& os){ os << name; }
+};
+
 class AsmProc{
 public:
 	AsmProc(string n, procType t): name(n), type(t) {};
@@ -192,6 +215,7 @@ public:
 	void Add(cmd command, AsmOp* op);
 	void Add(cmd command, AsmOp* op1, AsmOp* op2);
 	void Add(cmd command, AsmCmd* cmnd, AsmOp* op);
+	void AddLabel(string name);
 	void Print(ostream& os);
 private:
 	list<AsmCmd*> commands;

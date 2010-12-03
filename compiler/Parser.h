@@ -92,6 +92,7 @@ public:
 	StmtIf(NodeExpr* exp, Statement* frst, Statement* scnd): expr(exp), first(frst), second(scnd){};
 	StmtIf(NodeExpr* exp, Statement* frst): expr(exp), first(frst), second(NULL){};
 	int FillTree(int i, int j);
+	void Generate(AsmProc* Asm);
 private:
 	NodeExpr* expr;
 	Statement* first;
@@ -102,6 +103,7 @@ class StmtWhile: public Statement{
 public:
 	StmtWhile(NodeExpr* exp, Statement* b): expr(exp), body(b){};
 	int FillTree(int i, int j){ return FillTreeWhileRepeat(i, j, "while", "do", expr, body); }
+	void Generate(AsmProc* Asm);
 private:
 	NodeExpr* expr;
 	Statement* body;
@@ -111,6 +113,7 @@ class StmtRepeat: public Statement{
 public:
 	StmtRepeat(NodeExpr* exp, Statement* b): expr(exp), body(b){};
 	int FillTree(int i, int j){ return FillTreeWhileRepeat(i, j, "repeat", "until", body, expr); }
+	void Generate(AsmProc* Asm);
 private:
 	NodeExpr* expr;
 	Statement* body;
@@ -142,6 +145,7 @@ class StmtFor: public Statement{
 public:
 	StmtFor(Symbol* v, NodeExpr* init, NodeExpr* finit, Statement* b, bool t): var(v), initVal(init), finitVal(finit), body(b), to(t){};
 	int FillTree(int i, int j);
+	void Generate(AsmProc* Asm);
 private:
 	Symbol* var;
 	NodeExpr* initVal;
@@ -152,10 +156,12 @@ private:
 
 class StmtBreak: public Statement{
 	int FillTree(int i, int j){ return FillTreeIdentConst(i, j, "break"); }
+	//void Generate(AsmProc* Asm);
 };
 
 class StmtContinue: public Statement{
 	int FillTree(int i, int j){	return FillTreeIdentConst(i, j, "continue"); }
+	//void Generate(AsmProc* Asm);
 };
 
 class Const: public NodeExpr{

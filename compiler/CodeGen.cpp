@@ -16,7 +16,13 @@ void FillCmdNames(){
 	cmdNames[asmCall] = "call"; cmdNames[asmDwtoa] = "dwtoa"; cmdNames[asmStdout] = "StdOut";
 	cmdNames[asmNeg] = "neg"; cmdNames[asmFLd] = "fld"; cmdNames[asmFStp] = "fstp"; cmdNames[asmFAdd] = "fadd";
 	cmdNames[asmFSub] = "fsub"; cmdNames[asmFImul] = "fimul"; cmdNames[asmFIdiv] = "fidiv"; cmdNames[asmFChs] = "fchs"; 
-	cmdNames[asmRepMovsd] = "rep movsd"; 
+	cmdNames[asmRepMovsd] = "rep movsd";  cmdNames[asmPushfd] = "pushfd";	cmdNames[asmFLd1] = "fld1";
+	cmdNames[asmCMovE] = "cmove"; cmdNames[asmCMovNE] = "cmovne"; cmdNames[asmCMovL] = "cmovl"; 
+	cmdNames[asmCMovLE] = "cmovle"; cmdNames[asmCMovG] = "cmovg"; cmdNames[asmCMovGE] = "cmovge";
+	cmdNames[asmFComI] = "fcomi"; cmdNames[asmFCMovE] = "fcmove"; cmdNames[asmFCMovNE] = "fcmovne";
+	cmdNames[asmFCMovB] = "fcmovb"; cmdNames[asmFCMovNBE] = "fcmovnbe"; cmdNames[asmFCMovBE] = "fcmovbe";
+	cmdNames[asmFCMovNB] = "fcmovnb"; cmdNames[asmTest] = "test"; cmdNames[asmJZ] = "jz"; cmdNames[asmJNZ] = "jnz";
+	cmdNames[asmJG] = "jg"; cmdNames[asmJL] = "jl";
 }
 
 void AsmImmString::Print(ostream& os){ 
@@ -79,6 +85,9 @@ void AsmProc::Add(cmd command, AsmOp* op){
 			commands.push_back(new AsmCmd1(command, op)); 
 	}
 }
+void AsmProc::AddLabel(string name){
+	commands.push_back(new AsmLabel(name));
+}
 void AsmProc::Add(cmd command, AsmOp* op1, AsmOp* op2){ 
 	switch(command){
 		case asmDwtoa: case asmStdout:
@@ -108,7 +117,7 @@ void AsmProc::Print(ostream& os){
 			os << name << ":\n";
 			break;
 		case pProc:
-			os << "proc " << name << "\n";
+			os << name << "proc " <<  "\n";
 			break;
 		case pData: case pCode:
 			os << name << "\n";
