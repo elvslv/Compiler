@@ -121,13 +121,14 @@ private:
 
 class StmtWrite: public Statement{
 public:
-	StmtWrite(bool w, list<NodeExpr*>* p): writeln(w), params(p){};
-	StmtWrite(bool w): writeln(w), params(NULL){};
+	StmtWrite(bool w, list<NodeExpr*>* p, string f): writeln(w), params(p), format(f){};
+	StmtWrite(bool w, string f): writeln(w), params(NULL), format(f){};
 	int FillTree(int i, int j);
 	void Generate(AsmProc* Asm);
 private:
 	list<NodeExpr*>* params;
 	bool writeln;
+	string format;
 };
 
 class Variable: public NodeExpr{
@@ -156,12 +157,12 @@ private:
 
 class StmtBreak: public Statement{
 	int FillTree(int i, int j){ return FillTreeIdentConst(i, j, "break"); }
-	//void Generate(AsmProc* Asm);
+	void Generate(AsmProc* Asm);
 };
 
 class StmtContinue: public Statement{
 	int FillTree(int i, int j){	return FillTreeIdentConst(i, j, "continue"); }
-	//void Generate(AsmProc* Asm);
+	void Generate(AsmProc* Asm);
 };
 
 class Const: public NodeExpr{
@@ -183,6 +184,7 @@ public:
 	BinaryOp(Symbol* symb, int p, int ll, NodeExpr* l, NodeExpr* r) : NodeExpr(symb, p, ll), left(l), right(r) {};
 	bool LValue() {return false; }
 	bool IsInt();
+	bool IsReal();
 	bool IsBinaryOp() {return true; }
 	NodeExpr* GetLeft() {return left;}
 	NodeExpr* GetRight() {return right;}

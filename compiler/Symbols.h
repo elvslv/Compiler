@@ -108,6 +108,7 @@ class SymTypeReal: public SymTypeScalar{
 public:
 	SymTypeReal(string s): SymTypeScalar(s){};
 	bool IsReal() {return true;}
+	int Size() { return 8; }
 };
 
 class SymTypeInteger: public SymTypeScalar{
@@ -224,6 +225,7 @@ public:
 	string ToString () { return toString(val); }
 	void Generate(AsmProc* Asm);
 	void GenDef(AsmProc* Asm);
+	virtual int Size() { return 8; }
 private:
 	double val;
 };

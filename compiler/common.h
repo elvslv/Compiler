@@ -197,8 +197,8 @@ enum cmd{
 	asmFStp,
 	asmFAdd,
 	asmFSub,
-	asmFImul,
-	asmFIdiv,
+	asmFMul,
+	asmFDiv,
 	asmFChs,
 	asmRepMovsd,
 	asmRet,
@@ -223,6 +223,8 @@ enum cmd{
 	asmJNZ,
 	asmJG,
 	asmJL,
+	asmFInit,
+	asmFIld, 
 };
 enum procType{
 	pMain,

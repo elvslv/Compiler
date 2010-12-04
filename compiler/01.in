@@ -1,4 +1,7 @@
 var a, b: integer;
+k, l: real;
 begin
-	writeln('sdghkjshjkh''gfkjdkdsh'#65#66#67'gsjdghjh'''''#257);
+	k := 0.5;
+	l := k / 255.78;
+	writeln(l, ' ', k, l / 234, k + l);
 end.

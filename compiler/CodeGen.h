@@ -18,7 +18,7 @@ public:
 	AsmOp() { name = ""; }
 	AsmOp(string n): name(n){};
 	virtual string GetName() { return name; }
-	virtual void Print(ostream& os) = 0;
+	virtual void Print(ostream& os){};
 protected:
 	string name;
 };
@@ -36,7 +36,8 @@ public:
 	virtual bool IsInt() { return false; }
 	virtual bool IsReal() { return false; }
 	virtual bool IsString() { return false; }
-	virtual void Print(ostream& os) = 0;
+	virtual void Print(ostream& os){ os << name; };
+
 };
 
 class AsmOffset: public AsmOp{
@@ -99,12 +100,22 @@ public:
 	void Print(ostream& os) {
 		os << "["; 
 		mem->Print(os);
-		os  << " + ";
-		offset->Print(os); 
+		if (offset) {
+			os  << " + ";
+			offset->Print(os); 
+		}
 		os << "]";}
 private:
 	AsmOp* mem;
 	AsmOp* offset;
+};
+
+class AsmPtr: public AsmOp{
+public:
+	AsmPtr(string n, AsmMemByAddr* p): AsmOp(n), ptr(p){};
+	void Print(ostream& os) { os << name; ptr->Print(os); }
+private:
+	AsmMemByAddr* ptr;
 };
 
 class AsmStackVal: public AsmOp{

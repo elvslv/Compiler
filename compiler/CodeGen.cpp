@@ -8,21 +8,21 @@ void FillCmdNames(){
 	cmdTypes["+"] = asmAdd; cmdTypes["-"] = asmSub; cmdTypes["DIV"] = asmIDiv; cmdTypes["*"] = asmIMul;
 	cmdTypes["AND"] = asmAnd; cmdTypes["OR"] = asmOr; cmdTypes["XOR"] = asmXor; 
 	cmdTypes["NOT"] = asmNot; cmdTypes["SHL"] = asmShl; cmdTypes["SHR"] = asmShr; 
-	cmdTypes["f+"] = asmFAdd; cmdTypes["f-"] = asmFSub; cmdTypes["f/"] = asmFIdiv; cmdTypes["f*"] = asmFImul;
+	cmdTypes["f+"] = asmFAdd; cmdTypes["f-"] = asmFSub; cmdTypes["f/"] = asmFDiv; cmdTypes["f*"] = asmFMul;
 	cmdNames[asmIMul] = "imul"; cmdNames[asmPush] = "push"; cmdNames[asmPop] = "pop"; 
 	cmdNames[asmCmp] = "cmp"; cmdNames[asmJmp] = "jmp"; cmdNames[asmDw] = "dw"; cmdNames[asmDd] = "dd"; 
 	cmdNames[asmDb] = "db"; cmdNames[asmUnknown] = "?";cmdNames[asmCode] = ".code";
-	cmdNames[asmData] = ".data"; cmdNames[asmScanf] = "crt_scanf"; cmdNames[asmPrintf] = "crt_printf";
+	cmdNames[asmData] = ".data"; cmdNames[asmScanf] = "crt_scanf"; cmdNames[asmPrintf] = "call crt_printf";
 	cmdNames[asmCall] = "call"; cmdNames[asmDwtoa] = "dwtoa"; cmdNames[asmStdout] = "StdOut";
 	cmdNames[asmNeg] = "neg"; cmdNames[asmFLd] = "fld"; cmdNames[asmFStp] = "fstp"; cmdNames[asmFAdd] = "fadd";
-	cmdNames[asmFSub] = "fsub"; cmdNames[asmFImul] = "fimul"; cmdNames[asmFIdiv] = "fidiv"; cmdNames[asmFChs] = "fchs"; 
+	cmdNames[asmFSub] = "fsub"; cmdNames[asmFMul] = "fmul"; cmdNames[asmFDiv] = "fdiv"; cmdNames[asmFChs] = "fchs"; 
 	cmdNames[asmRepMovsd] = "rep movsd";  cmdNames[asmPushfd] = "pushfd";	cmdNames[asmFLd1] = "fld1";
 	cmdNames[asmCMovE] = "cmove"; cmdNames[asmCMovNE] = "cmovne"; cmdNames[asmCMovL] = "cmovl"; 
 	cmdNames[asmCMovLE] = "cmovle"; cmdNames[asmCMovG] = "cmovg"; cmdNames[asmCMovGE] = "cmovge";
 	cmdNames[asmFComI] = "fcomi"; cmdNames[asmFCMovE] = "fcmove"; cmdNames[asmFCMovNE] = "fcmovne";
 	cmdNames[asmFCMovB] = "fcmovb"; cmdNames[asmFCMovNBE] = "fcmovnbe"; cmdNames[asmFCMovBE] = "fcmovbe";
 	cmdNames[asmFCMovNB] = "fcmovnb"; cmdNames[asmTest] = "test"; cmdNames[asmJZ] = "jz"; cmdNames[asmJNZ] = "jnz";
-	cmdNames[asmJG] = "jg"; cmdNames[asmJL] = "jl";
+	cmdNames[asmJG] = "jg"; cmdNames[asmJL] = "jl"; cmdNames[asmFInit] = "finit"; cmdNames[asmFIld] = "fild";
 }
 
 void AsmImmString::Print(ostream& os){ 
@@ -148,10 +148,14 @@ void AsmCode::Print(ostream& os){
 	os << ".model flat,stdcall\n";
 	os << "option casemap :none\n";
 	os << "include include\\windows.inc\n";
+	os << "include include\\msvcrt.inc\n";
 	os << "include include\\kernel32.inc\n";
 	os << "include include\\masm32.inc\n";
+	os << "include include\\fpu.inc\n";
 	os << "includelib lib\\masm32.lib\n";
+	os << "includelib lib\\msvcrt.lib\n";
 	os << "includelib lib\\kernel32.lib\n";
+	os << "includelib lib\\fpu.lib\n";
 	for (list<AsmProc*>::iterator it = proc.begin(); it != proc.end(); ++it)
 		(*it)->Print(os);
 }

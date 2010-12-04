@@ -1,9 +1,13 @@
 #include "Parser.h"
 #include "Symbols.h"
+#include "Math.h"
 static int id = 0;
 static int labelCnt = 0;
 static int forCnt = 0;
-static map<string, string> strings;
+static int formatCnt = 0;
+static map<string, string> formatStrings;
+list<string> lblBeginBlock;
+list<string> lblEndBlock;
 AsmMem* mem(string name){ return new AsmMem("G_" + name); }
 AsmMem* mem(string name, int off){ return new AsmMem("G_" + name, off); }
 string MakeLabel(){
@@ -18,7 +22,9 @@ void Parser::Generate(){
 		if (!it->second->IsProc())
 			it->second->GenDef(curProc);
 	}
-	curProc->Add(asmDup, new AsmDd(writeBuf, new AsmImmInt(256)), new AsmImmInt(0));
+	curProc->Add(asmDd, new AsmMem("tmp"));
+	for (map<string, string>::iterator it = formatStrings.begin(); it != formatStrings.end(); ++it)
+		curProc->Add(asmDb, new AsmMem(it->first), new AsmImm(it->second));
 	curProc = Asm->AddProc(".code", pCode);
 	for (SymMap::iterator it = tbl->GetTable()->begin(); it != tbl->GetTable()->end(); ++it){
 		if (!it->second->IsProc() || it->second->IsType())
@@ -27,11 +33,16 @@ void Parser::Generate(){
 		it->second->Generate(curProc);
 	}
 	curProc = Asm->AddProc("main", pMain);
+	curProc->Add(asmFInit);
 	program->Generate(curProc);
 }
 void StmtAssign::Generate(AsmProc* Asm){
 	left->GenLValue(Asm);
 	right->Generate(Asm);
+	if (right->IsReal()){
+		Asm->Add(asmSub, esp, new AsmImmInt(4));
+		Asm->Add(asmFStp, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+	}
 	Asm->Add(asmPop, eax);
 	Asm->Add(asmPop, ebx);
 	Asm->Add(asmMov, new AsmMemByAddr(ebx, 0), eax);  ////
@@ -44,30 +55,29 @@ string ChangeString(string tmp, int i){
 	str = "'" + str + "'";
 	return str;
 }
+string ChangeString(string tmp){
+	string str = tmp;
+	for (int j = 0; j < str.length(); ++j)
+		if (str.substr(j, 1) == "'")
+			str.insert(j++, "'");
+	return str;
+}
 void StmtWrite::Generate(AsmProc* Asm){
+	int offset = 0;
 	if (params)
-		for (list<NodeExpr*>::iterator it = params->begin(); it != params->end(); ++it){
-			if ((*it)->IsString()){
-				string tmp = ((SymVarConstString*)((*it)->GetSymbol()))->GetValue();
-				string str;
-				tmp = tmp.substr(1, tmp.length() - 2);
-				for (int i = 0; i < tmp.length() / 4 + (tmp.length() % 4 != 0); ++i){
-					str = ChangeString(tmp, i);
-					Asm->Add(asmMov, *writeBuf + i * 4, new AsmImmString(str));
-				}
+		for (list<NodeExpr*>::reverse_iterator it = params->rbegin(); it != params->rend(); ++it){
+			if ((*it)->IsString() || (*it)->IsConst())
+				continue;
+			(*it)->Generate(Asm);
+			if ((*it)->IsReal()){
+				Asm->Add(asmSub, esp, new AsmImmInt(8));
+				Asm->Add(asmFStp, new AsmPtr("qword ptr", new AsmMemByAddr(esp, 0)));
 			}
-			else{
-				(*it)->Generate(Asm);
-				Asm->Add(asmPop, eax);
-				Asm->Add(asmDwtoa, eax, writeBufOff);
-			}
-			Asm->Add(asmStdout, writeBufOff);
+			offset += (*it)->GetSymbol()->Size();
 		}
-	if (writeln){
-		Asm->Add(asmMov, writeBuf, new AsmImmInt(10));
-		Asm->Add(asmMov, *writeBuf + 4, new AsmImmInt(0));
-		Asm->Add(asmStdout, writeBufOff);
-	}
+	Asm->Add(asmPush, new AsmOffset(format));
+	Asm->Add(asmPrintf);
+	Asm->Add(asmAdd, esp, new AsmImmInt(offset + 4));
 }
 void SymVar::GenDef(AsmProc* Asm){
 	if (GetType()->IsScalar())
@@ -91,10 +101,15 @@ void SymVarConstInt::Generate(AsmProc* Asm){
 		Asm->Add(asmPush, mem(GetName()));
 }
 void SymVarConstReal::Generate(AsmProc* Asm){
-	if (UnnamedSymb(this))
-		Asm->Add(asmFLd, new AsmImmReal(GetValue()));
+	if (UnnamedSymb(this)){
+		float tmp = GetValue();
+		char str_tmp[10];
+		sprintf(str_tmp, "%08xh", *((int*)&tmp));
+		Asm->Add(asmMov, new AsmMem("tmp"), new AsmLabelOp(str_tmp));
+		Asm->Add(asmFLd, new AsmMem("tmp"));
+	}
 	else
-		Asm->Add(asmPush, mem(GetName()));
+		Asm->Add(asmFLd, mem(GetName()));
 }
 void SymVarConstString::Generate(AsmProc* Asm){
 	Asm->Add(asmPush, new AsmImmString(GetValue()));
@@ -103,7 +118,7 @@ void Const::Generate(AsmProc* Asm){
 	((SymVarConst*)symbol)->Generate(Asm);
 }
 void SymVarParamByValue::Generate(AsmProc* Asm){
-	if (Size() > 4){
+	if (Size() > 4 && !GetType()->IsReal()){
 		Asm->Add(asmMov, ecx, new AsmImmInt(Size() / 4));
 		Asm->Add(asmMov, esi, ebx);
 		Asm->Add(asmMov, edi, esp);
@@ -135,7 +150,7 @@ void SymVarLocal::GenLValue(AsmProc* Asm){
 	Asm->Add(asmPush, eax);
 }
 void SymVarGlobal::Generate(AsmProc* Asm){
-	if (Size() > 4){
+	if (Size() > 4 && !GetType()->IsReal()){
 		Asm->Add(asmMov, ecx, new AsmImmInt(Size() / 4));
 		Asm->Add(asmMov, esi, ebx);
 		Asm->Add(asmMov, edi, esp);
@@ -334,9 +349,10 @@ void UnaryOp::Generate(AsmProc* Asm){
 	if (op == "+")
 		return;
 	if (IsReal()){
-		if (op == "IToR" && child->IsInt()){  ////?????
+		if (op == "ItoR" && child->IsInt()){  ////?????
 			Asm->Add(asmPop, eax);
-			Asm->Add(asmFLd, eax); 
+			Asm->Add(asmMov, new AsmMem("tmp"), eax);
+			Asm->Add(asmFIld, new AsmMem("tmp"));
 		}
 		if (op == "-")
 			Asm->Add(asmFChs, new AsmReg("st(0)"));
@@ -364,53 +380,71 @@ void SymProc::Generate(AsmProc* Asm){
 	Asm->Add(asmRet, new AsmImmInt(args->GetTable()->size()));
 }
 void StmtRepeat::Generate(AsmProc* Asm){
-	string lbl = MakeLabel();
-	Asm->AddLabel(lbl);
+	string lblBegin = MakeLabel();
+	string lblEnd = MakeLabel();
+	lblBeginBlock.push_back(lblBegin);
+	lblEndBlock.push_back(lblEnd);
+	Asm->AddLabel(lblBegin);
 	body->Generate(Asm);
 	expr->Generate(Asm);
 	Asm->Add(asmPop, eax);
 	Asm->Add(asmTest, eax, eax);
-	Asm->Add(asmJNZ, new AsmLabelOp(lbl));
+	Asm->Add(asmJNZ, new AsmLabelOp(lblBegin));
+	Asm->AddLabel(lblEnd);
+	lblBeginBlock.pop_back();
+	lblEndBlock.pop_back();
 }
 void StmtWhile::Generate(AsmProc* Asm){
-	string lbl1 = MakeLabel();
-	string lbl2 = MakeLabel();
-	Asm->AddLabel(lbl1);
+	string lblBegin = MakeLabel();
+	string lblEnd = MakeLabel();
+	lblBeginBlock.push_back(lblBegin);
+	lblEndBlock.push_back(lblEnd);
+	Asm->AddLabel(lblBegin);
 	expr->Generate(Asm);
 	Asm->Add(asmPop, eax);
 	Asm->Add(asmTest, eax, eax);
-	Asm->Add(asmJZ, new AsmLabelOp(lbl2));
+	Asm->Add(asmJZ, new AsmLabelOp(lblEnd));
 	body->Generate(Asm);
-	Asm->Add(asmJmp, new AsmLabelOp(lbl1));	
-	Asm->AddLabel(lbl2);
+	Asm->Add(asmJmp, new AsmLabelOp(lblBegin));	
+	Asm->AddLabel(lblEnd);
+	lblBeginBlock.pop_back();
+	lblEndBlock.pop_back();
 }
 void StmtFor::Generate(AsmProc *Asm){
 	((SymVar*)var)->GenLValue(Asm);
-	string lbl = MakeLabel();
-	string lbl1 = MakeLabel();
+	string lblBegin = MakeLabel();
+	string lblEnd = MakeLabel();
+	lblBeginBlock.push_back(lblBegin);
+	lblEndBlock.push_back(lblEnd);
 	initVal->Generate(Asm);
 	Asm->Add(asmPop, eax);
 	Asm->Add(asmPop, ebx);
 	Asm->Add(asmMov, new AsmMemByAddr(ebx, 0), eax);
 	finitVal->Generate(Asm);
-	Asm->AddLabel(lbl);
+	Asm->AddLabel(lblBegin);
 	((SymVar*)var)->Generate(Asm);
 	Asm->Add(asmPop, eax); 
 	Asm->Add(asmPop, edx); 
 	((SymVar*)var)->GenLValue(Asm);
 	Asm->Add(asmPop, ebx);
 	Asm->Add(asmCmp, eax, edx);
-	Asm->Add(to ? asmJG : asmJL, new AsmLabelOp(lbl1));
+	Asm->Add(to ? asmJG : asmJL, new AsmLabelOp(lblEnd));
 	Asm->Add(asmPush, edx);
 	body->Generate(Asm);
 	Asm->Add(to ? asmAdd : asmSub, new AsmMemByAddr(ebx, 0), new AsmImmInt(1));
 	Asm->Add(asmPop, edx);
-	Asm->AddLabel(lbl1);
-	Asm->Add(asmPop, edx);
+	Asm->Add(asmJmp, new AsmLabelOp(lblBegin));
+	Asm->AddLabel(lblEnd);
+	lblBeginBlock.pop_back();
+	lblEndBlock.pop_back();
 }
 void StmtIf::Generate(AsmProc* Asm){
 	string lblAfterIf = MakeLabel();
 	string lblElse = MakeLabel();
+	string lblBeg = MakeLabel();
+	lblBeginBlock.push_back(lblBeg);
+	lblEndBlock.push_back(lblAfterIf);
+	Asm->AddLabel(lblBeg);
 	expr->Generate(Asm);
 	Asm->Add(asmPop, eax);
 	Asm->Add(asmTest, eax, eax);
@@ -423,6 +457,14 @@ void StmtIf::Generate(AsmProc* Asm){
 		second->Generate(Asm);
 	}
 	Asm->AddLabel(lblAfterIf);
+	lblBeginBlock.pop_back();
+	lblEndBlock.pop_back();
+}
+void StmtBreak::Generate(AsmProc* Asm){
+	Asm->Add(asmJmp, new AsmLabelOp(*lblEndBlock.rend()));
+}
+void StmtContinue::Generate(AsmProc* Asm){
+	Asm->Add(asmJmp, new AsmLabelOp(*lblBeginBlock.rend()));
 }
 void Parser::PrintTable(){
 	SymTable* tbl = *lowerTable;
@@ -531,14 +573,15 @@ bool Const::IsReal() { return symbol->GetType()->IsReal(); }
 bool Const::IsString() { return ((SymVarConst*)symbol)->IsString();} 
 bool BinaryOp::IsInt() {return right->IsInt() && left->IsInt() && IsIntOperator(GetValue()) || 
 						 ((SymType*)right->GetType())->IsScalar() && ((SymType*)right->GetType())->IsScalar() && IsLogicOperator(GetValue()); }
+bool BinaryOp::IsReal() {return right->IsReal() || left->IsReal() || GetValue() == "/"; }
 bool ArrayAccess::IsInt() { return SymIsInt(GetType()); }
 bool ArrayAccess::IsReal() { return SymIsReal(GetType());  }
 bool RecordAccess::IsInt() { return SymIsInt(GetType());  }
 bool RecordAccess::IsReal() { return SymIsReal(GetType());  }
 bool FunctionCall::IsInt() { return SymIsInt(GetType());  }
 bool FunctionCall::IsReal() { return SymIsReal(GetType()); }
-bool UnaryOp::IsInt() {return symbol->GetName() != "IToR" && child->IsInt() && IsIntOperator(GetValue()); }
-bool UnaryOp::IsReal() { return symbol->GetName() == "IToR" || child->IsReal(); }
+bool UnaryOp::IsInt() {return symbol->GetName() != "ItoR" && child->IsInt() && IsIntOperator(GetValue()); }
+bool UnaryOp::IsReal() { return symbol->GetName() == "ItoR" || child->IsReal(); }
 bool EqTypes(SymType* t1, SymType* t2){ return t1->GetSourceType() == t2->GetSourceType(); }
 bool IToR(SymType* t1, SymType* t2){ return t1->GetSourceType()->GetName() == "REAL" && 
 											t2->GetSourceType()->GetName() == "INTEGER"; }
@@ -557,21 +600,21 @@ void FillMaps(){
 	cmdTypes["+"] = asmAdd; cmdTypes["-"] = asmSub; cmdTypes["DIV"] = asmIDiv; cmdTypes["*"] = asmIMul;
 	cmdTypes["AND"] = asmAnd; cmdTypes["OR"] = asmOr; cmdTypes["XOR"] = asmXor; 
 	cmdTypes["NOT"] = asmNot; cmdTypes["SHL"] = asmShl; cmdTypes["SHR"] = asmShr; 
-	cmdTypes["f+"] = asmFAdd; cmdTypes["f-"] = asmFSub; cmdTypes["f/"] = asmFIdiv; cmdTypes["f*"] = asmFImul;
+	cmdTypes["f+"] = asmFAdd; cmdTypes["f-"] = asmFSub; cmdTypes["f/"] = asmFDiv; cmdTypes["f*"] = asmFMul;
 	cmdNames[asmIMul] = "imul"; cmdNames[asmPush] = "push"; cmdNames[asmPop] = "pop"; 
 	cmdNames[asmCmp] = "cmp"; cmdNames[asmJmp] = "jmp"; cmdNames[asmDw] = "dw"; cmdNames[asmDd] = "dd"; 
 	cmdNames[asmDb] = "db"; cmdNames[asmUnknown] = "?";cmdNames[asmCode] = ".code";
 	cmdNames[asmData] = ".data"; cmdNames[asmScanf] = "crt_scanf"; cmdNames[asmPrintf] = "crt_printf";
 	cmdNames[asmCall] = "call"; cmdNames[asmDwtoa] = "dwtoa"; cmdNames[asmStdout] = "StdOut";
 	cmdNames[asmNeg] = "neg"; cmdNames[asmFLd] = "fld"; cmdNames[asmFStp] = "fstp"; cmdNames[asmFAdd] = "fadd";
-	cmdNames[asmFSub] = "fsub"; cmdNames[asmFImul] = "fimul"; cmdNames[asmFIdiv] = "fidiv"; cmdNames[asmFChs] = "fchs"; 
+	cmdNames[asmFSub] = "fsub"; cmdNames[asmFMul] = "fmul"; cmdNames[asmFDiv] = "fdiv"; cmdNames[asmFChs] = "fchs"; 
 	cmdNames[asmRepMovsd] = "rep movsd";  cmdNames[asmPushfd] = "pushfd";	cmdNames[asmFLd1] = "fld1";
 	cmdNames[asmCMovE] = "cmove"; cmdNames[asmCMovNE] = "cmovne"; cmdNames[asmCMovL] = "cmovl"; 
 	cmdNames[asmCMovLE] = "cmovle"; cmdNames[asmCMovG] = "cmovg"; cmdNames[asmCMovGE] = "cmovge";
 	cmdNames[asmFComI] = "fcomi"; cmdNames[asmFCMovE] = "fcmove"; cmdNames[asmFCMovNE] = "fcmovne";
 	cmdNames[asmFCMovB] = "fcmovb"; cmdNames[asmFCMovNBE] = "fcmovnbe"; cmdNames[asmFCMovBE] = "fcmovbe";
 	cmdNames[asmFCMovNB] = "fcmovnb"; cmdNames[asmTest] = "test";cmdNames[asmJZ] = "jz"; cmdNames[asmJNZ] = "jnz";
-	cmdNames[asmJG] = "jg"; cmdNames[asmJL] = "jl";
+	cmdNames[asmJG] = "jg"; cmdNames[asmJL] = "jl"; cmdNames[asmFInit] = "finit"; cmdNames[asmFIld] = "fild";
 }
 int FindOpPrior(string str){
 	map<string, int>::iterator it;
@@ -755,8 +798,13 @@ StmtRepeat* Parser::ParseRepeat(SymStIt curTable){
 }
 StmtWrite* Parser::ParseWrite(SymStIt curTable, bool w){
 	scan.Next();
-	if (TokType() != ttLeftParentheses)
-		return new StmtWrite(w);
+	string format = "";
+	string formatName = "format" + toString(formatCnt++);
+	if (TokType() != ttLeftParentheses){
+		format = "\'\', 0";
+		formatStrings[formatName] = format;
+		return new StmtWrite(w, formatName);
+	}
 	map<string, string>::iterator it;
 	list<NodeExpr*>* params = new list<NodeExpr*>();
 	while (TokType() != ttRightParentheses){
@@ -764,9 +812,26 @@ StmtWrite* Parser::ParseWrite(SymStIt curTable, bool w){
 		if (TokType() != ttPoint)
 			TryError(TokType() != ttRightParentheses, ") expected, but " + TokVal() + " found");
 		params->push_back(expr);
+		if (expr->IsString() || expr->IsConst()){
+			string tmp = ((SymVarConst*)expr->GetSymbol())->ToString();
+			if (expr->IsString()){
+				tmp = tmp.substr(1, tmp.length() - 2);
+				tmp = ChangeString(tmp);
+			}
+			format += tmp;
+		}
+		else if (expr->IsInt())
+			format += "%d";
+		else if (expr->IsReal())
+			format += "%f";
 	}
+	format = "'" + format + "'";
+	if (w)
+		format += ", 10";
+	format += ", 0";
+	formatStrings[formatName] = format;
 	scan.Next();
-	return new StmtWrite(w, params);
+	return new StmtWrite(w, params, formatName);
 }
 StmtProcedure* Parser::ParseProcedure(SymStIt curTable){
 	NodeExpr* expr =  ParseSimple(curTable, 5);
