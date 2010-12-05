@@ -1,7 +1,17 @@
-var a, b: integer;
-k, l: real;
+var i, n: integer;
+j: real;
 begin
-	k := 0.5;
-	l := k / 255.78;
-	writeln(l, ' ', k, l / 234, k + l);
+	n := 15;
+	j := 25.5;
+	while (n < j) do
+	begin
+		if (n = 20) then
+		begin
+			n := n + 1;
+			continue;
+		end;
+		i := i + 1;
+		n := n + 5;
+	end;
+	writeln(n, ' ', j, ' ', i);
 end.

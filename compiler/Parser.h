@@ -45,6 +45,8 @@ public:
 	virtual bool IsString() {return false; }
 	virtual bool IsConst() {return false; }
 	virtual bool IsBinaryOp() {return false; }
+	virtual bool IsArrayAccess() {return false; }
+	virtual bool IsRecordAccess() {return false; }
 	void SetType(Symbol* t) {type = t; }
 	Symbol* GetType() {return type;}
 	Symbol* GetSymbol() {return symbol; }
@@ -52,6 +54,7 @@ public:
 	int GetLine() {return line;}
 	virtual void Generate(AsmProc* Asm){};
 	virtual void GenLValue(AsmProc* Asm){};
+	virtual int Size(){ return 4; };
 protected:
 	Symbol* symbol;
 	Symbol* type;
@@ -140,6 +143,7 @@ public:
 	int FillTree(int i, int j){ return FillTreeIdentConst(i, j, GetValue());}
 	void Generate(AsmProc* Asm);
 	void GenLValue(AsmProc* Asm);
+	int Size();
 };
 
 class StmtFor: public Statement{
@@ -175,6 +179,7 @@ public:
 	bool IsString();
 	int FillTree(int i, int j) { return FillTreeIdentConst(i, j, GetValue());}
 	void Generate(AsmProc* Asm);
+	int Size();
 };
 
 int FillTreeBinOp(int i, int j, string Value, NodeExpr* left, NodeExpr* right);
@@ -202,9 +207,11 @@ public:
 	bool LValue() {return left->LValue(); }
 	bool IsInt();
 	bool IsReal();
+	bool IsArrayAccess(){ return true; }
 	int FillTree(int i, int j){return FillTreeBinOp(i, j, GetValue(), left, right);}
 	void GenLValue(AsmProc* Asm);
 	void Generate(AsmProc* Asm);
+	int Size();
 };
 
 class RecordAccess: public NodeExpr{
@@ -213,9 +220,11 @@ public:
 	bool LValue() {return left->LValue(); }
 	bool IsInt();
 	bool IsReal();
+	bool IsRecordAccess(){ return true; }
 	int FillTree(int i, int j) {return FillTreeBinOp(i, j, ".", left, right);}
 	void GenLValue(AsmProc* Asm);
 	void Generate(AsmProc* Asm);
+	int Size();
 private:
 	NodeExpr* left;
 	NodeExpr* right;
@@ -231,6 +240,7 @@ public:
 	list<NodeExpr*>* GetArgs() { return &args; }
 	int FillTree(int i, int j);
 	void Generate(AsmProc* Asm);
+	int Size();
 private:
 	list<NodeExpr*> args;
 };

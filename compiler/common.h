@@ -225,6 +225,7 @@ enum cmd{
 	asmJL,
 	asmFInit,
 	asmFIld, 
+	asmFLdZ, 
 };
 enum procType{
 	pMain,

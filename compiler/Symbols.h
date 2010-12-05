@@ -27,7 +27,7 @@ public:
 	virtual SymType* GetType() {return NULL; }
 	virtual void Generate(AsmProc* Asm) {};
 	virtual void GenDef(AsmProc* Asm) {};
-	virtual int Size() { return 4; };
+	virtual int Size() { return 4; }
 protected:
 	string name;
 };
@@ -121,7 +121,6 @@ class SymTypeString: public SymTypeScalar{
 public:
 	SymTypeString(string s): SymTypeScalar(s){};
 	bool IsString() {return true; }
-	//int TypeSize() { return 4; } //
 };
 
 class SymTypeRecord: public SymType{

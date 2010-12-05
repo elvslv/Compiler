@@ -23,6 +23,7 @@ void FillCmdNames(){
 	cmdNames[asmFCMovB] = "fcmovb"; cmdNames[asmFCMovNBE] = "fcmovnbe"; cmdNames[asmFCMovBE] = "fcmovbe";
 	cmdNames[asmFCMovNB] = "fcmovnb"; cmdNames[asmTest] = "test"; cmdNames[asmJZ] = "jz"; cmdNames[asmJNZ] = "jnz";
 	cmdNames[asmJG] = "jg"; cmdNames[asmJL] = "jl"; cmdNames[asmFInit] = "finit"; cmdNames[asmFIld] = "fild";
+	cmdNames[asmFLdZ] = "fldz";
 }
 
 void AsmImmString::Print(ostream& os){ 

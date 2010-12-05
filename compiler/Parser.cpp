@@ -13,6 +13,11 @@ AsmMem* mem(string name, int off){ return new AsmMem("G_" + name, off); }
 string MakeLabel(){
 	return "label" + toString(labelCnt++);
 }
+int Variable::Size() { return symbol->Size(); }
+int Const::Size() { return symbol->Size(); }
+int ArrayAccess::Size() { return type->Size(); }
+int RecordAccess::Size() { return type->Size(); }
+int FunctionCall::Size() { return type->Size(); }
 void Parser::Generate(){
 	AsmProc* curProc = Asm->AddProc(".data", pData);
 	SymTable* tbl = *lowerTable;
@@ -37,15 +42,25 @@ void Parser::Generate(){
 	program->Generate(curProc);
 }
 void StmtAssign::Generate(AsmProc* Asm){
-	left->GenLValue(Asm);
-	right->Generate(Asm);
-	if (right->IsReal()){
-		Asm->Add(asmSub, esp, new AsmImmInt(4));
-		Asm->Add(asmFStp, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+	if ((!right->IsReal() || right->IsArrayAccess() || right->IsRecordAccess()) && right->Size() > 8)
+	{
+		Asm->Add(asmMov, ecx, new AsmImmInt(right->Size() / 4));    ///
+ 		Asm->Add(asmMov, esi, new AsmOffset(mem(right->GetSymbol()->GetName())));
+		Asm->Add(asmMov, edi, new AsmOffset(mem(left->GetSymbol()->GetName())));
+		Asm->Add(asmRepMovsd);
 	}
-	Asm->Add(asmPop, eax);
-	Asm->Add(asmPop, ebx);
-	Asm->Add(asmMov, new AsmMemByAddr(ebx, 0), eax);  ////
+	else {
+		left->GenLValue(Asm);
+		right->Generate(Asm);
+		/*if (right->IsReal()){
+			Asm->Add(asmSub, esp, new AsmImmInt(4));
+			Asm->Add(asmFStp, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+		}*/
+		Asm->Add(asmPop, eax);
+		Asm->Add(asmPop, ebx);
+		Asm->Add(asmMov, new AsmMemByAddr(ebx, 0), eax);  ////
+	}
+
 }
 string ChangeString(string tmp, int i){
 	string str = tmp.substr(i * 4, 4);
@@ -70,7 +85,8 @@ void StmtWrite::Generate(AsmProc* Asm){
 				continue;
 			(*it)->Generate(Asm);
 			if ((*it)->IsReal()){
-				Asm->Add(asmSub, esp, new AsmImmInt(8));
+				Asm->Add(asmFLd, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+				Asm->Add(asmSub, esp, new AsmImmInt(4));
 				Asm->Add(asmFStp, new AsmPtr("qword ptr", new AsmMemByAddr(esp, 0)));
 			}
 			offset += (*it)->GetSymbol()->Size();
@@ -83,7 +99,7 @@ void SymVar::GenDef(AsmProc* Asm){
 	if (GetType()->IsScalar())
 		Asm->Add(asmDd, mem(name));
 	else 
-		Asm->Add(asmDup, new AsmDd(mem(name), new AsmImmInt(Size())), new AsmImmInt(0));
+		Asm->Add(asmDup, new AsmDd(mem(name), new AsmImmInt(Size() / 4)), new AsmImmInt(0));
 }
 void SymVarConstInt::GenDef(AsmProc* Asm){
 	Asm->Add(asmDd, mem(name), new AsmImmInt(GetValue()));
@@ -110,6 +126,9 @@ void SymVarConstReal::Generate(AsmProc* Asm){
 	}
 	else
 		Asm->Add(asmFLd, mem(GetName()));
+	Asm->Add(asmSub, esp, new AsmImmInt(4));
+	Asm->Add(asmFStp, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+
 }
 void SymVarConstString::Generate(AsmProc* Asm){
 	Asm->Add(asmPush, new AsmImmString(GetValue()));
@@ -119,15 +138,19 @@ void Const::Generate(AsmProc* Asm){
 }
 void SymVarParamByValue::Generate(AsmProc* Asm){
 	if (Size() > 4 && !GetType()->IsReal()){
+		Asm->Add(asmSub, esp, new AsmImmInt(Size()));
 		Asm->Add(asmMov, ecx, new AsmImmInt(Size() / 4));
-		Asm->Add(asmMov, esi, ebx);
+		Asm->Add(asmMov, esi, new AsmOffset(mem(GetName())));
 		Asm->Add(asmMov, edi, esp);
 		Asm->Add(asmRepMovsd);
 	}
 	else if (GetType()->IsInt())
 		Asm->Add(asmPush, new AsmMemByAddr(ebp, new AsmImmInt(GetTableOffset() - GetOffset() + 8)));
-	else
+	else{
 		Asm->Add(asmFLd, new AsmMemByAddr(ebp, new AsmImmInt(GetTableOffset() - GetOffset() + 8)));
+		Asm->Add(asmSub, esp, new AsmImmInt(4));
+		Asm->Add(asmFStp, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+	}
 }
 void SymVarParamByValue::GenLValue(AsmProc* Asm){
 	Asm->Add(asmMov, eax, ebp);
@@ -151,13 +174,17 @@ void SymVarLocal::GenLValue(AsmProc* Asm){
 }
 void SymVarGlobal::Generate(AsmProc* Asm){
 	if (Size() > 4 && !GetType()->IsReal()){
+		Asm->Add(asmSub, esp, new AsmImmInt(Size()));
 		Asm->Add(asmMov, ecx, new AsmImmInt(Size() / 4));
-		Asm->Add(asmMov, esi, ebx);
+		Asm->Add(asmMov, esi, new AsmOffset(mem(GetName())));
 		Asm->Add(asmMov, edi, esp);
 		Asm->Add(asmRepMovsd);
 	} 
-	else if (GetType()->IsReal())
+	else if (GetType()->IsReal()){
 		Asm->Add(asmFLd, mem(GetName())); 
+		Asm->Add(asmSub, esp, new AsmImmInt(4));
+		Asm->Add(asmFStp, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+	}
 	else
 		Asm->Add(asmPush, mem(GetName())); 
 }
@@ -177,13 +204,17 @@ void ArrayAccess::Generate(AsmProc* Asm){
 	Asm->Add(asmPop, eax);
 	Asm->Add(asmMov, ecx, new AsmImmInt(symbol->Size()));
 	Asm->Add(asmMul, ecx);
-	if (symbol->Size() <= 4){
-		if (IsReal())
-			Asm->Add(asmFLd, new AsmMemByAddr(ebx, eax));
+	if (symbol->Size() <= 4 || IsReal()){
+		if (IsReal()){
+			Asm->Add(asmFLd, new AsmPtr("dword ptr", new AsmMemByAddr(ebx, eax)));
+			Asm->Add(asmSub, esp, new AsmImmInt(4));
+			Asm->Add(asmFStp, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+		}
 		else
 			Asm->Add(asmPush, new AsmMemByAddr(ebx, eax));
 	}
 	else{
+		Asm->Add(asmSub, esp, new AsmImmInt(symbol->Size()));
 		Asm->Add(asmMov, ecx, new AsmImmInt(symbol->Size() / 4));
 		Asm->Add(asmMov, esi, ebx);
 		Asm->Add(asmMov, edi, esp);
@@ -191,7 +222,7 @@ void ArrayAccess::Generate(AsmProc* Asm){
 	}
 }
 void ArrayAccess::GenLValue(AsmProc* Asm){
-	left->GenLValue(Asm);
+	((Variable*)left)->GenLValue(Asm);
 	Asm->Add(asmPop, ebx);
 	right->Generate(Asm);
 	Asm->Add(asmPop, eax);
@@ -201,39 +232,34 @@ void ArrayAccess::GenLValue(AsmProc* Asm){
 	Asm->Add(asmPush, eax);
 }
 void RecordAccess::Generate(AsmProc* Asm){
-	left->GenLValue(Asm);
+	((Variable*)left)->GenLValue(Asm);
 	Asm->Add(asmPop, ebx);
-	right->Generate(Asm);
-	Asm->Add(asmPop, eax);
-	Asm->Add(asmMov, ecx, new AsmImmInt(((SymVar*)right->GetSymbol())->GetOffset()));
-	Asm->Add(asmMul, ecx);
-	if (symbol->Size() <= 4){
-		if (IsReal())
-			Asm->Add(asmFLd, new AsmMemByAddr(ebx, eax));
+	Asm->Add(asmAdd, ebx, new AsmImmInt(((SymVar*)right->GetSymbol())->GetOffset()));
+	if (((SymVar*)right->GetSymbol())->Size() <= 4 || ((SymVar*)right->GetSymbol())->GetType()->IsReal()){
+		if (IsReal()){
+			Asm->Add(asmFLd, new AsmPtr("dword ptr", new AsmMemByAddr(ebx, 0)));
+			Asm->Add(asmSub, esp, new AsmImmInt(4));
+			Asm->Add(asmFStp, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+		}
 		else
-			Asm->Add(asmPush, new AsmMemByAddr(ebx, eax));
+			Asm->Add(asmPush, new AsmMemByAddr(ebx, 0));
 	}
 	else{
-		Asm->Add(asmMov, ecx, new AsmImmInt(symbol->Size() / 4));
+		Asm->Add(asmSub, esp, new AsmImmInt(((SymVar*)right->GetSymbol())->Size()));
+		Asm->Add(asmMov, ecx, new AsmImmInt(((SymVar*)right->GetSymbol())->Size() / 4));
 		Asm->Add(asmMov, esi, ebx);
 		Asm->Add(asmMov, edi, esp);
 		Asm->Add(asmRepMovsd);
 	}
 }
 void RecordAccess::GenLValue(AsmProc* Asm){
-	left->GenLValue(Asm);
+	((Variable*)left)->GenLValue(Asm);
 	Asm->Add(asmPop, ebx);
-	right->Generate(Asm);
-	Asm->Add(asmPop, eax);
-	Asm->Add(asmMov, ecx, new AsmImmInt(((SymVar*)right->GetSymbol())->GetOffset()));
-	Asm->Add(asmMul, ecx);
-	Asm->Add(asmAdd, eax, ebx);
-	Asm->Add(asmPush, eax);
+	Asm->Add(asmAdd, ebx, new AsmImmInt(((SymVar*)right->GetSymbol())->GetOffset()));
+	Asm->Add(asmPush, ebx);
 }
 void BinaryOp::Generate(AsmProc* Asm){
 	string op = symbol->GetName();
-	if (IsReal())
-		Asm->Add(asmFLd1);
 	right->Generate(Asm);
 	left->Generate(Asm);
 	if (IsInt()){
@@ -249,63 +275,8 @@ void BinaryOp::Generate(AsmProc* Asm){
 			Asm->Add(asmMov, eax, edx);
 		}
 		else if (IsLogicOperator(op)){
-			/*Asm->Add(asmMov, ecx, eax)
-			Asm->Add(asmCmp, ecx, ebx);
-			Asm->Add(asmPushfd);
-			Asm->Add(asmPop, eax);
-			if (op == "="){
-				Asm->Add(asmAnd, eax, new AsmImmInt(64));
-			} 
-			else if (op == "<>"){
-				Asm->Add(asmAnd, eax, new AsmImmInt(64));
-				Asm->Add(asmNot, eax);
-			}
-			else if (op ==  "<"){
-				Asm->Add(asmMov, ecx, eax);
-				Asm->Add(asmAnd, eax, new AsmImmInt(128)); //SF
-				Asm->Add(asmAnd, ecx, new AsmImmInt(2048)); //OF
-				Asm->Add(asmCmp, eax, ecx);
-				Asm->Add(asmPushfd);
-				Asm->Add(asmPop, eax);
-				Asm->Add(asmAnd, eax, new AsmImmInt(64));
-				Asm->Add(asmNot, eax);
-			}
-			else if (op == ">"){
-				Asm->Add(asmMov, ecx, eax);
-				Asm->Add(asmMov, ebx, eax);
-				Asm->Add(asmAnd, eax, new AsmImmInt(128)); //SF
-				Asm->Add(asmAnd, eax, new AsmImmInt(64)); //ZF
-				Asm->Add(asmNot, ebx);
-				Asm->Add(asmAnd, ecx, new AsmImmInt(2048)); //OF
-				Asm->Add(asmCmp, eax, ecx);
-				Asm->Add(asmPushfd);
-				Asm->Add(asmPop, eax);
-				Asm->Add(asmAnd, eax, new AsmImmInt(64));
-				Asm->Add(asmAnd, eax, ebx);
-			}
-			else if (op == "<="){
-				Asm->Add(asmMov, ecx, eax);
-				Asm->Add(asmMov, ebx, eax);
-				Asm->Add(asmAnd, eax, new AsmImmInt(128)); //SF
-				Asm->Add(asmAnd, eax, new AsmImmInt(64)); //ZF
-				Asm->Add(asmAnd, ecx, new AsmImmInt(2048)); //OF
-				Asm->Add(asmCmp, eax, ecx);
-				Asm->Add(asmPushfd);
-				Asm->Add(asmPop, eax);
-				Asm->Add(asmAnd, eax, new AsmImmInt(64));
-				Asm->Add(asmNot, eax);
-				Asm->Add(asmOr, eax, ebx);
-			}
-			else if (op == ">="){
-				Asm->Add(asmMov, ecx, eax);
-				Asm->Add(asmAnd, eax, new AsmImmInt(128)); //SF
-				Asm->Add(asmAnd, ecx, new AsmImmInt(2048)); //OF
-				Asm->Add(asmCmp, eax, ecx);
-				Asm->Add(asmPushfd);
-				Asm->Add(asmPop, eax);
-				Asm->Add(asmAnd, eax, new AsmImmInt(64));
-			}*/
 			Asm->Add(asmCmp, eax, ebx);
+			Asm->Add(asmMov, eax, new AsmImmInt(0));
 			Asm->Add(asmMov, ecx, new AsmImmInt(1));
 			if (op == "=")
 				Asm->Add(asmCMovE , eax, ecx);
@@ -324,23 +295,38 @@ void BinaryOp::Generate(AsmProc* Asm){
 			Asm->Add(cmdTypes[op], eax, ebx);
 		Asm->Add(asmPush, eax);
 	} 
-	else if (IsLogicOperator(op)){
-		Asm->Add(asmFComI, new AsmReg("st(0)"), new AsmReg("st(1)"));
-		if (op == "=")
-			Asm->Add(asmFCMovE, new AsmReg("st(0)"), new AsmReg("st(2)"));
-		else if (op == "<>")
-			Asm->Add(asmFCMovNE, new AsmReg("st(0)"), new AsmReg("st(2)"));
-		else if (op ==  "<")
-			Asm->Add(asmFCMovB, new AsmReg("st(0)"), new AsmReg("st(2)"));
-		else if (op == ">")
-			Asm->Add(asmFCMovNBE, new AsmReg("st(0)"), new AsmReg("st(2)"));
-		else if (op == "<=")
-			Asm->Add(asmFCMovBE, new AsmReg("st(0)"), new AsmReg("st(2)"));
-		else if (op == ">=")
-			Asm->Add(asmFCMovNB, new AsmReg("st(0)"), new AsmReg("st(2)"));
+	else {
+		if (IsLogicOperator(op)){
+			Asm->Add(asmFLd1);
+			Asm->Add(asmFLd, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+			Asm->Add(asmAdd, esp, new AsmImmInt(4));
+			Asm->Add(asmFLd, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+			Asm->Add(asmAdd, esp, new AsmImmInt(4));
+			Asm->Add(asmFComI, new AsmReg("st(0)"), new AsmReg("st(1)"));
+			Asm->Add(asmFLdZ);
+			if (op == "=")
+				Asm->Add(asmFCMovE, new AsmReg("st(0)"), new AsmReg("st(2)"));
+			else if (op == "<>")
+				Asm->Add(asmFCMovNE, new AsmReg("st(0)"), new AsmReg("st(2)"));
+			else if (op ==  "<")
+				Asm->Add(asmFCMovB, new AsmReg("st(0)"), new AsmReg("st(2)"));
+			else if (op == ">")
+				Asm->Add(asmFCMovNBE, new AsmReg("st(0)"), new AsmReg("st(2)"));
+			else if (op == "<=")
+				Asm->Add(asmFCMovBE, new AsmReg("st(0)"), new AsmReg("st(2)"));
+			else if (op == ">=")
+				Asm->Add(asmFCMovNB, new AsmReg("st(0)"), new AsmReg("st(2)"));
+		}
+		else
+			Asm->Add(asmFLd, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+			Asm->Add(asmAdd, esp, new AsmImmInt(4));
+			Asm->Add(asmFLd, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+			Asm->Add(asmAdd, esp, new AsmImmInt(4));
+			Asm->Add(cmdTypes["f" + op], new AsmReg("st(0)"), new AsmReg("st(1)"));
+			Asm->Add(asmSub, esp, new AsmImmInt(4));
+			Asm->Add(asmFStp, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+			Asm->Add(asmFInit);
 	}
-	else
-		Asm->Add(cmdTypes["f" + op], new AsmReg("st(0)"), new AsmReg("st(1)"));
 	
 }
 void UnaryOp::Generate(AsmProc* Asm){
@@ -354,8 +340,14 @@ void UnaryOp::Generate(AsmProc* Asm){
 			Asm->Add(asmMov, new AsmMem("tmp"), eax);
 			Asm->Add(asmFIld, new AsmMem("tmp"));
 		}
-		if (op == "-")
-			Asm->Add(asmFChs, new AsmReg("st(0)"));
+		if (op == "-"){
+			Asm->Add(asmFLd, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+			Asm->Add(asmAdd, esp, new AsmImmInt(4));
+			Asm->Add(asmFChs);
+		}
+		Asm->Add(asmSub, esp, new AsmImmInt(4));
+		Asm->Add(asmFStp, new AsmPtr("dword ptr", new AsmMemByAddr(esp, 0)));
+		Asm->Add(asmFInit);
 	}
 	else{
 		Asm->Add(asmPop, eax);
@@ -389,7 +381,7 @@ void StmtRepeat::Generate(AsmProc* Asm){
 	expr->Generate(Asm);
 	Asm->Add(asmPop, eax);
 	Asm->Add(asmTest, eax, eax);
-	Asm->Add(asmJNZ, new AsmLabelOp(lblBegin));
+	Asm->Add(asmJZ, new AsmLabelOp(lblBegin));
 	Asm->AddLabel(lblEnd);
 	lblBeginBlock.pop_back();
 	lblEndBlock.pop_back();
@@ -425,14 +417,14 @@ void StmtFor::Generate(AsmProc *Asm){
 	((SymVar*)var)->Generate(Asm);
 	Asm->Add(asmPop, eax); 
 	Asm->Add(asmPop, edx); 
-	((SymVar*)var)->GenLValue(Asm);
-	Asm->Add(asmPop, ebx);
 	Asm->Add(asmCmp, eax, edx);
 	Asm->Add(to ? asmJG : asmJL, new AsmLabelOp(lblEnd));
 	Asm->Add(asmPush, edx);
 	body->Generate(Asm);
-	Asm->Add(to ? asmAdd : asmSub, new AsmMemByAddr(ebx, 0), new AsmImmInt(1));
-	Asm->Add(asmPop, edx);
+	((SymVar*)var)->GenLValue(Asm);
+	Asm->Add(asmPop, ebx);
+	Asm->Add(to ? asmAdd : asmSub, new AsmPtr("dword ptr", new AsmMemByAddr(ebx, 0)), new AsmImmInt(1));
+	//Asm->Add(asmPop, edx);
 	Asm->Add(asmJmp, new AsmLabelOp(lblBegin));
 	Asm->AddLabel(lblEnd);
 	lblBeginBlock.pop_back();
@@ -442,14 +434,14 @@ void StmtIf::Generate(AsmProc* Asm){
 	string lblAfterIf = MakeLabel();
 	string lblElse = MakeLabel();
 	string lblBeg = MakeLabel();
-	lblBeginBlock.push_back(lblBeg);
-	lblEndBlock.push_back(lblAfterIf);
 	Asm->AddLabel(lblBeg);
 	expr->Generate(Asm);
 	Asm->Add(asmPop, eax);
 	Asm->Add(asmTest, eax, eax);
 	if (second)
 		Asm->Add(asmJZ, new AsmLabelOp(lblElse));
+	else
+		Asm->Add(asmJZ, new AsmLabelOp(lblAfterIf));
 	first->Generate(Asm);
 	Asm->Add(asmJmp, new AsmLabelOp(lblAfterIf));
 	if (second){
@@ -457,14 +449,14 @@ void StmtIf::Generate(AsmProc* Asm){
 		second->Generate(Asm);
 	}
 	Asm->AddLabel(lblAfterIf);
-	lblBeginBlock.pop_back();
-	lblEndBlock.pop_back();
 }
 void StmtBreak::Generate(AsmProc* Asm){
-	Asm->Add(asmJmp, new AsmLabelOp(*lblEndBlock.rend()));
+	string str = *(lblEndBlock.rbegin());
+	Asm->Add(asmJmp, new AsmLabelOp(str));
 }
 void StmtContinue::Generate(AsmProc* Asm){
-	Asm->Add(asmJmp, new AsmLabelOp(*lblBeginBlock.rend()));
+	string str = *(lblBeginBlock.rbegin());
+	Asm->Add(asmJmp, new AsmLabelOp(str));
 }
 void Parser::PrintTable(){
 	SymTable* tbl = *lowerTable;
@@ -615,6 +607,7 @@ void FillMaps(){
 	cmdNames[asmFCMovB] = "fcmovb"; cmdNames[asmFCMovNBE] = "fcmovnbe"; cmdNames[asmFCMovBE] = "fcmovbe";
 	cmdNames[asmFCMovNB] = "fcmovnb"; cmdNames[asmTest] = "test";cmdNames[asmJZ] = "jz"; cmdNames[asmJNZ] = "jnz";
 	cmdNames[asmJG] = "jg"; cmdNames[asmJL] = "jl"; cmdNames[asmFInit] = "finit"; cmdNames[asmFIld] = "fild";
+	cmdNames[asmFLdZ] = "fldz";
 }
 int FindOpPrior(string str){
 	map<string, int>::iterator it;
@@ -1270,8 +1263,8 @@ NodeExpr* Parser::ParseVariable(SymStIt curTable, NodeExpr* res){
 		SymMap::iterator it = FindS(TokVal(), curTable, tableStack->begin());
 		var = (SymVar*)(it->second);
 		s = TokVal();
-		Symbol* symb = new Symbol(s);
-		res = new NodeExpr(symb, pos, line);
+		//Symbol* symb = new Symbol(s);
+		res = new Variable(var, pos, line);
 	}
 	else{
 		s = res->GetValue();
@@ -1309,6 +1302,7 @@ NodeExpr* Parser::ParseVariable(SymStIt curTable, NodeExpr* res){
 }
 ArrayAccess* Parser::ParseArr(SymStIt curTable, NodeExpr* res, Symbol** var, int pos, int line){
 	SymType* type = (*var)->GetType();
+	//if (res->)
 	if (TokType() == ttLeftBracket){
 		scan.Next();
 		while (true){
@@ -1406,7 +1400,7 @@ RecordAccess* Parser::ParseRecord(SymStIt curTable, NodeExpr* res, Symbol** var,
 			TryError(it == recTable->GetTable()->end(), "Unknown identifier in record access");
 			*var = (SymVar*)(it->second);
 			symb = new Symbol(TokVal());
-			expr = new NodeExpr(symb, pos, line);
+			expr = new Variable(*var, pos, line);
 			res = new RecordAccess(*var, pos, line, res, expr);
 			res->SetType(type);
 			scan.Next();
